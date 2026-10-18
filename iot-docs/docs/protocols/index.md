@@ -1,0 +1,8 @@
+# 协议详解
+
+| 协议 | 说明 | 状态 |
+|---|---|---|
+| JT/T 808 | 道路运输车辆卫星定位系统终端通讯协议 | 可用（2013 / 2019） |
+| HJ212 | 污染物在线监控（监测）系统数据传输标准 | 可用（2017） |
+| SLP | 智能储物柜协议（虚构的示例协议），见 [协议文档](https://github.com/xiaowu-iot/iot-protocol-gateway/blob/main/iot-protocols/iot-slp/PROTOCOL.md) | 可用 |
+| JT/T 1078 | 道路运输车辆卫星定位系统视频通讯协议 | 规划中 |

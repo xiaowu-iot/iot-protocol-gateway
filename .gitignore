@@ -1,0 +1,27 @@
+# 个人计划文档，不进仓库
+/开发计划.md
+/*.private.md
+
+# Maven
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# 日志
+logs/
+*.log
+
+# 文档站
+node_modules/
+iot-docs/docs/.vitepress/cache/
+iot-docs/docs/.vitepress/dist/
+
+# 系统
+.DS_Store
+Thumbs.db

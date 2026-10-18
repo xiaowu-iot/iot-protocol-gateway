@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: iot-gateway
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+# 各协议的监听端口，enabled=false 时不启动对应服务
+iot:
+  jt808:
+    enabled: true
+    port: 7611
+    # 读空闲超时（秒），心跳间隔的 3 倍
+    idle-seconds: 180
+  jt1078:
+    enabled: false
+    port: 7612
+  hj212:
+    enabled: true
+    port: 7613
+  slp:
+    enabled: true
+    port: 7614
+  sink:
+    # log / webhook / kafka，可以同时开多个，逗号分隔
+    types: log
+    webhook-url:
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # /actuator/prometheus 给 Prometheus 拉取指标
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: iot-gateway
+
+logging:
+  level:
+    # 改成 DEBUG 可以看到每条连接的建立
+    io.github.xiaowuiot.iot: INFO
