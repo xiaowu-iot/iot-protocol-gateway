@@ -153,6 +153,11 @@ iot-protocol-gateway
 
 公众号回复【速查】可以领取《IoT 协议速查手册》PDF。
 
+<p align="center">
+  <img src=".github/assets/wechat-qrcode.jpg" width="215" alt="公众号「小物学长」二维码"><br>
+  微信扫码关注公众号「小物学长」
+</p>
+
 ## 参与贡献
 
 欢迎提交 Issue 和 PR。如果你手上有真实设备的报文样例（请脱敏后再提交），对完善协议兼容性帮助很大。
