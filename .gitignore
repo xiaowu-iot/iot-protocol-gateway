@@ -25,3 +25,6 @@ iot-docs/docs/.vitepress/dist/
 # 系统
 .DS_Store
 Thumbs.db
+
+# 模糊测试实验的输出
+fuzz-result.txt

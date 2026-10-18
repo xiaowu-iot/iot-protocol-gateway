@@ -65,7 +65,9 @@ public class EscapedDelimiterFrameDecoder extends AbstractFrameDecoder {
             discard(ctx, in, end - start, DiscardReason.BAD_ESCAPE);
             return;
         }
-        in.readerIndex(end + 1);
+        // 结尾的分隔符不吃掉，留给下一轮当起始分隔符：正常的 "7E 7E" 会在下一轮跳过一个；
+        // 如果下一帧的起始 7E 丢了、或者设备让相邻两帧共用一个 7E，下一帧照样能切出来
+        in.readerIndex(end);
         out.add(frame);
     }
 }
