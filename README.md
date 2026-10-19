@@ -3,6 +3,8 @@
 基于 Netty 的国标 IoT 协议接入网关。支持 **JT/T 808（2013 / 2019）、HJ212-2017** 和一个示例私有协议 **SLP**，自带**设备模拟器**：没有真机也能跑起来。
 
 > 🚧 项目处于早期阶段，接口可能还会调整。欢迎 Star 关注进度。
+>
+> 仓库地址：[GitHub](https://github.com/xiaowu-iot/iot-protocol-gateway) · [Gitee（国内镜像）](https://gitee.com/xiaowu-iot/iot-protocol-gateway)
 
 ## 为什么做这个项目
 
@@ -30,6 +32,8 @@
 
 ```bash
 git clone https://github.com/xiaowu-iot/iot-protocol-gateway.git
+# 国内访问慢的话用 Gitee 镜像：
+# git clone https://gitee.com/xiaowu-iot/iot-protocol-gateway.git
 cd iot-protocol-gateway
 mvn clean package -DskipTests
 ```
