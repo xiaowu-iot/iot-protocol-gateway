@@ -100,6 +100,7 @@ public class Hj212Server {
         private final Hj212CommandSender commandSender;
         private final Hj212Split.Assembler assembler = new Hj212Split.Assembler(60_000);
         private final boolean autoTimeSync;
+        private static final io.netty.util.AttributeKey<String> PW_FAILED = io.netty.util.AttributeKey.valueOf("hj212.pwFailed");
 
         public Handler(SessionManager sessions, BiPredicate<String, String> passwordChecker, Listener listener) {
             this(sessions, passwordChecker, listener, new Hj212CommandSender(sessions), false);
@@ -118,6 +119,10 @@ public class Hj212Server {
         protected void channelRead0(ChannelHandlerContext ctx, Hj212Packet received) {
             if (!passwordChecker.test(received.getMn(), received.getPw())) {
                 log.warn("{} 设备 {} 密码错误，丢弃", ctx.channel(), received.getMn());
+                // 现场机每条数据都带密码，密码错了每条都会失败：同一条连接上同一个 MN 只记一次
+                if (!java.util.Objects.equals(received.getMn(), ctx.channel().attr(PW_FAILED).getAndSet(received.getMn()))) {
+                    sessions.authResult(PROTOCOL, ctx.channel(), received.getMn(), "密码校验", false, "密码错误");
+                }
                 return;
             }
             Session session = SessionManager.get(ctx.channel());
@@ -126,6 +131,7 @@ public class Hj212Server {
                 if (session != null) {
                     sessions.unregister(ctx.channel());
                 }
+                sessions.authResult(PROTOCOL, ctx.channel(), received.getMn(), "密码校验", true, null);
                 session = sessions.register(received.getMn(), PROTOCOL, ctx.channel());
             }
             session.touch();
@@ -189,8 +195,14 @@ public class Hj212Server {
         }
 
         @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            sessions.connected(PROTOCOL, ctx.channel());
+            ctx.fireChannelActive();
+        }
+
+        @Override
         public void channelInactive(ChannelHandlerContext ctx) {
-            sessions.unregister(ctx.channel());
+            sessions.disconnected(PROTOCOL, ctx.channel());
             ctx.fireChannelInactive();
         }
 
@@ -198,6 +210,7 @@ public class Hj212Server {
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt instanceof IdleStateEvent) {
                 log.info("{} 长时间没有收到数据，判定离线", ctx.channel());
+                SessionManager.closeReason(ctx.channel(), "心跳超时");
                 ctx.close();
                 return;
             }
@@ -207,6 +220,7 @@ public class Hj212Server {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             log.info("{} 连接异常，关闭：{}", ctx.channel(), cause.toString());
+            SessionManager.closeReason(ctx.channel(), "连接异常：" + cause.getMessage());
             ctx.close();
         }
     }

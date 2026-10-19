@@ -2,6 +2,9 @@ package io.github.xiaowuiot.iot.gateway.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.iot.gateway.audit.AuditLog;
+import io.github.xiaowuiot.iot.gateway.audit.CommandAuditFilter;
+import io.github.xiaowuiot.iot.gateway.audit.ConnectionAuditListener;
 import io.github.xiaowuiot.iot.gateway.sink.KafkaSink;
 import io.github.xiaowuiot.iot.gateway.sink.LogSink;
 import io.github.xiaowuiot.iot.gateway.sink.MessageSink;
@@ -12,6 +15,8 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -29,8 +34,27 @@ public class GatewayConfig {
      * 所有协议共用一个会话管理器，管理 API 可以统一查询在线设备
      */
     @Bean
-    public SessionManager sessionManager() {
-        return new SessionManager();
+    public SessionManager sessionManager(AuditLog audit) {
+        SessionManager sessions = new SessionManager();
+        sessions.addListener(new ConnectionAuditListener(audit));
+        return sessions;
+    }
+
+    /**
+     * 设备连接记录和指令记录，内存里留最近 iot.audit.max-records 条给接口查，全部写到 iot-audit.log
+     */
+    @Bean
+    public AuditLog auditLog(ObjectMapper mapper, @Value("${iot.audit.max-records:5000}") int maxRecords) {
+        return new AuditLog(mapper, maxRecords);
+    }
+
+    @Bean
+    public FilterRegistrationBean<CommandAuditFilter> commandAuditFilter(AuditLog audit) {
+        FilterRegistrationBean<CommandAuditFilter> bean = new FilterRegistrationBean<>(new CommandAuditFilter(audit));
+        bean.addUrlPatterns("/api/*");
+        // 指令接口是异步的，结果在异步分发里才拿得到
+        bean.setDispatcherTypes(jakarta.servlet.DispatcherType.REQUEST, jakarta.servlet.DispatcherType.ASYNC);
+        return bean;
     }
 
     @Bean(destroyMethod = "close")

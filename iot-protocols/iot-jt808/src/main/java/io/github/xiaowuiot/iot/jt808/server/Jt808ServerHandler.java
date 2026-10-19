@@ -124,6 +124,8 @@ public class Jt808ServerHandler extends SimpleChannelInboundHandler<Jt808Message
     private void onRegister(ChannelHandlerContext ctx, Jt808Header header, Register register) {
         Jt808AuthService.RegisterResult r = authService.register(header, register);
         log.info("{} 终端注册 {} {}，结果 {}", ctx.channel(), header.deviceId(), register, r.getResult());
+        sessions.authResult(Jt808CommandSender.PROTOCOL, ctx.channel(), header.deviceId(), "注册",
+                r.getResult() == RegisterResponse.SUCCESS, registerResult(r.getResult()));
         Jt808Header h = Jt808Header.to(header, MessageId.REGISTER_RESPONSE, preAuthSerial(ctx.channel()));
         ctx.writeAndFlush(new Jt808Message(h, new RegisterResponse(header.getSerialNo(), r.getResult(), r.getAuthCode())));
     }
@@ -131,12 +133,31 @@ public class Jt808ServerHandler extends SimpleChannelInboundHandler<Jt808Message
     private void onAuth(ChannelHandlerContext ctx, Jt808Header header, Auth auth) {
         if (!authService.authenticate(header, auth)) {
             log.warn("{} 终端 {} 鉴权失败，鉴权码 {}", ctx.channel(), header.deviceId(), auth.getAuthCode());
+            sessions.authResult(Jt808CommandSender.PROTOCOL, ctx.channel(), header.deviceId(), "鉴权", false, "鉴权码不正确");
             reply(ctx, header, GeneralResponse.FAILURE);
             return;
         }
+        sessions.authResult(Jt808CommandSender.PROTOCOL, ctx.channel(), header.deviceId(), "鉴权", true, null);
         Session session = sessions.register(header.deviceId(), Jt808CommandSender.PROTOCOL, ctx.channel());
         session.setAttribute(Jt808CommandSender.HEADER_TEMPLATE, Jt808Header.to(header, 0, 0));
         reply(ctx, header, GeneralResponse.SUCCESS);
+    }
+
+    private static String registerResult(int result) {
+        switch (result) {
+            case RegisterResponse.SUCCESS:
+                return null;
+            case RegisterResponse.VEHICLE_REGISTERED:
+                return "车辆已被注册";
+            case RegisterResponse.VEHICLE_NOT_FOUND:
+                return "数据库中无该车辆";
+            case RegisterResponse.TERMINAL_REGISTERED:
+                return "终端已被注册";
+            case RegisterResponse.TERMINAL_NOT_FOUND:
+                return "数据库中无该终端";
+            default:
+                return "结果码 " + result;
+        }
     }
 
     private void notifyListener(Session session, Jt808Message msg) {
@@ -195,12 +216,13 @@ public class Jt808ServerHandler extends SimpleChannelInboundHandler<Jt808Message
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         log.debug("{} 新连接", ctx.channel());
+        sessions.connected(Jt808CommandSender.PROTOCOL, ctx.channel());
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        sessions.unregister(ctx.channel());
+        sessions.disconnected(Jt808CommandSender.PROTOCOL, ctx.channel());
         ctx.fireChannelInactive();
     }
 
@@ -208,6 +230,7 @@ public class Jt808ServerHandler extends SimpleChannelInboundHandler<Jt808Message
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof IdleStateEvent) {
             log.info("{} 长时间没有收到数据，判定离线", ctx.channel());
+            SessionManager.closeReason(ctx.channel(), "心跳超时");
             ctx.close();
             return;
         }
@@ -218,6 +241,7 @@ public class Jt808ServerHandler extends SimpleChannelInboundHandler<Jt808Message
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // 走到这里的基本都是网络异常（比如 Connection reset），解析错误在解码器里已经处理掉了
         log.info("{} 连接异常，关闭：{}", ctx.channel(), cause.toString());
+        SessionManager.closeReason(ctx.channel(), "连接异常：" + cause.getMessage());
         ctx.close();
     }
 }

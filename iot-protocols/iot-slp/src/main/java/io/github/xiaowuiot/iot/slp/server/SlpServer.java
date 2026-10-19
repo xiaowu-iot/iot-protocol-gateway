@@ -174,12 +174,20 @@ public class SlpServer {
                 session.setAttribute("doorCount", login.getDoorCount());
             }
             log.info("{} 设备 {} 登录 {}，结果 {}", ctx.channel(), msg.getDeviceId(), msg.getBody(), result);
+            sessions.authResult(PROTOCOL, ctx.channel(), String.valueOf(msg.getDeviceId()), "登录", result == SlpBodies.LoginAck.SUCCESS,
+                    result == SlpBodies.LoginAck.NOT_REGISTERED ? "设备未登记" : result == SlpBodies.LoginAck.VERSION_UNSUPPORTED ? "协议版本不支持" : null);
             ctx.writeAndFlush(msg.response(new SlpBodies.LoginAck(result, now, heartbeatSeconds)));
         }
 
         @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            sessions.connected(PROTOCOL, ctx.channel());
+            ctx.fireChannelActive();
+        }
+
+        @Override
         public void channelInactive(ChannelHandlerContext ctx) {
-            sessions.unregister(ctx.channel());
+            sessions.disconnected(PROTOCOL, ctx.channel());
             ctx.fireChannelInactive();
         }
 
@@ -187,6 +195,7 @@ public class SlpServer {
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt instanceof IdleStateEvent) {
                 log.info("{} 长时间没有收到数据，判定离线", ctx.channel());
+                SessionManager.closeReason(ctx.channel(), "心跳超时");
                 ctx.close();
                 return;
             }
@@ -196,6 +205,7 @@ public class SlpServer {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             log.info("{} 连接异常，关闭：{}", ctx.channel(), cause.toString());
+            SessionManager.closeReason(ctx.channel(), "连接异常：" + cause.getMessage());
             ctx.close();
         }
     }

@@ -1,6 +1,7 @@
 package io.github.xiaowuiot.iot.codec.session;
 
 import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,59 @@ public class SessionManager {
         if (sessions.remove(session.getDeviceId(), session)) {
             log.info("设备离线 {}", session);
             fireOffline(session, false);
+        }
+    }
+
+    /** 关闭连接前记下原因，断开事件里带出去 */
+    private static final AttributeKey<String> CLOSE_REASON = AttributeKey.valueOf("iot.closeReason");
+
+    /**
+     * 新连接建立时调用
+     */
+    public void connected(String protocol, Channel channel) {
+        for (SessionListener l : listeners) {
+            try {
+                l.onConnect(protocol, channel);
+            } catch (Exception e) {
+                log.warn("连接事件处理失败 {}", channel, e);
+            }
+        }
+    }
+
+    /**
+     * 注册、鉴权、登录完成时调用，成功失败都要调
+     */
+    public void authResult(String protocol, Channel channel, String deviceId, String action, boolean success, String detail) {
+        for (SessionListener l : listeners) {
+            try {
+                l.onAuth(protocol, channel, deviceId, action, success, detail);
+            } catch (Exception e) {
+                log.warn("鉴权事件处理失败 {}", channel, e);
+            }
+        }
+    }
+
+    /**
+     * 主动关闭连接前调用，记下原因，比如心跳超时
+     */
+    public static void closeReason(Channel channel, String reason) {
+        channel.attr(CLOSE_REASON).setIfAbsent(reason);
+    }
+
+    /**
+     * 连接断开时调用：有会话的先下线，再发断开事件
+     */
+    public void disconnected(String protocol, Channel channel) {
+        Session session = get(channel);
+        String deviceId = session == null ? null : session.getDeviceId();
+        unregister(channel);
+        String reason = channel.attr(CLOSE_REASON).get();
+        for (SessionListener l : listeners) {
+            try {
+                l.onDisconnect(protocol, channel, deviceId, reason == null ? "连接断开" : reason);
+            } catch (Exception e) {
+                log.warn("断开事件处理失败 {}", channel, e);
+            }
         }
     }
 

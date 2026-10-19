@@ -24,6 +24,7 @@
 - **SLP 示例协议**：一个完整设计的私有二进制协议（[协议文档](iot-protocols/iot-slp/PROTOCOL.md)），演示怎样从零设计、实现私有协议
 - **编解码基础设施**：转义帧、长度帧、ASCII 帧解码器，半包、粘包、垃圾数据处理，指令应答匹配，会话管理
 - **网关应用**：Spring Boot 3，统一消息模型，输出到日志 / Kafka / Webhook，HTTP 管理接口下发指令
+- **连接记录和指令记录**：每台设备的连接、注册鉴权（成功失败和原因）、上下线、断开（心跳超时、连接异常），通过接口下发的每条指令和设备应答，都能按设备查
 - **设备模拟器**：一条命令模拟成百上千台 808 终端、212 数采仪、储物柜，带随机轨迹、断线重连、盲区补传、紧急报警等场景
 
 ## 快速开始
@@ -56,6 +57,18 @@ java -jar iot-simulator/target/iot-simulator-0.1.0-SNAPSHOT.jar jt808 --count 10
 curl http://localhost:8080/api/devices
 curl http://localhost:8080/api/jt808/13800138000/location
 ```
+
+查某台终端的连接记录（连接、鉴权、上下线、断开）和指令记录：
+
+```bash
+curl "http://localhost:8080/api/audit/connections?deviceId=13800138000"
+curl "http://localhost:8080/api/audit/commands?deviceId=13800138000"
+# 只看鉴权失败的、只看没成功的指令
+curl "http://localhost:8080/api/audit/connections?event=AUTH&success=false"
+curl "http://localhost:8080/api/audit/commands?success=false"
+```
+
+还可以加 `protocol`（jt808 / hj212 / slp）、`since`（如 `2026-10-20T08:00:00Z`）、`limit`（默认 100）。内存里只留最近 5000 条（`iot.audit.max-records`），每条记录同时写到 `logs/iot-audit.log`（一行一条 JSON，保留 90 天），更早的到文件里查。
 
 ## 项目结构
 
