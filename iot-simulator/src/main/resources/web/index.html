@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HJ212 调试工具</title>
+<style>
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --panel2: #f8fafb; --line: #e2e7ec; --text: #1d2a33; --muted: #6b7a86;
+  --accent: #0f7b6c; --accent-weak: #e3f3f0; --up: #2f6fd6; --up-weak: #e8f0fd; --down: #b25e09; --down-weak: #fdf1e3;
+  --ok: #1e8e3e; --ok-weak: #e6f4ea; --warn: #b26a00; --warn-weak: #fff4e0; --err: #c5221f; --err-weak: #fce8e6;
+  --code: #f1f4f6; --shadow: 0 1px 2px rgba(16, 24, 32, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161a; --panel: #182026; --panel2: #1c252c; --line: #2a353d; --text: #dfe6eb; --muted: #8b9aa5;
+    --accent: #3cc2ad; --accent-weak: #16312d; --up: #77a6f5; --up-weak: #1a2840; --down: #e3a35b; --down-weak: #33261a;
+    --ok: #5cc27a; --ok-weak: #18301f; --warn: #e6b45c; --warn-weak: #33291a; --err: #f28b82; --err-weak: #3a1f1d;
+    --code: #121a1f; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161a; --panel: #182026; --panel2: #1c252c; --line: #2a353d; --text: #dfe6eb; --muted: #8b9aa5;
+  --accent: #3cc2ad; --accent-weak: #16312d; --up: #77a6f5; --up-weak: #1a2840; --down: #e3a35b; --down-weak: #33261a;
+  --ok: #5cc27a; --ok-weak: #18301f; --warn: #e6b45c; --warn-weak: #33291a; --err: #f28b82; --err-weak: #3a1f1d;
+  --code: #121a1f; --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.5 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.mono, textarea.mono, input.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace; font-size: 12px; }
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+header .sub { color: var(--muted); font-size: 12px; }
+.spacer { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--panel2); border: 1px solid var(--line); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.pill.on .dot { background: var(--ok); }
+.pill.wait .dot { background: var(--warn); }
+nav.tabs { display: flex; gap: 4px; }
+nav.tabs button { border: none; background: none; padding: 6px 12px; border-radius: 6px; color: var(--muted); cursor: pointer; font: inherit; }
+nav.tabs button.active { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+button.btn { font: inherit; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; white-space: nowrap; }
+button.btn:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { color: var(--err); }
+button.small { padding: 2px 8px; font-size: 12px; }
+button:disabled { opacity: .5; cursor: default; }
+main { padding: 12px 16px; }
+.page { display: none; }
+.page.active { display: block; }
+.grid { display: grid; grid-template-columns: 300px minmax(340px, 1fr) minmax(420px, 1.25fr); gap: 12px; align-items: start; }
+@media (max-width: 1280px) { .grid { grid-template-columns: 300px 1fr; } .grid .log-col { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } main { padding: 10px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.card > h2 { font-size: 13px; margin: 0; padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.card .body { padding: 10px 12px; }
+details.sec { border-bottom: 1px solid var(--line); }
+details.sec:last-child { border-bottom: none; }
+details.sec > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+details.sec > summary::after { content: "▸"; color: var(--muted); }
+details.sec[open] > summary::after { content: "▾"; }
+details.sec .inner { padding: 0 12px 10px; display: grid; gap: 8px; }
+label.f { display: grid; gap: 3px; color: var(--muted); font-size: 12px; }
+label.f > span { display: flex; justify-content: space-between; }
+label.c { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > * { min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+input, select, textarea { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; width: 100%; }
+input[type=checkbox] { width: auto; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-weak); border-color: var(--accent); }
+textarea { resize: vertical; }
+.hint { color: var(--muted); font-size: 12px; }
+.note { background: var(--accent-weak); color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 12px; }
+.frame { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+.badge { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11px; line-height: 18px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.badge.ok { background: var(--ok-weak); color: var(--ok); border-color: transparent; }
+.badge.warn { background: var(--warn-weak); color: var(--warn); border-color: transparent; }
+.badge.error { background: var(--err-weak); color: var(--err); border-color: transparent; }
+.badge.wait { background: var(--warn-weak); color: var(--warn); border-color: transparent; }
+.badge.enc { background: var(--accent-weak); color: var(--accent); border-color: transparent; }
+.log-tools { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.log-tools select, .log-tools input[type=search] { width: auto; }
+#log { height: calc(100vh - 170px); min-height: 380px; overflow: auto; }
+@media (max-width: 1280px) { #log { height: 520px; } }
+.ev { border-bottom: 1px solid var(--line); }
+.ev .line { display: grid; grid-template-columns: 86px 22px minmax(0, 1fr) auto; gap: 6px; padding: 5px 12px; cursor: pointer; align-items: center; }
+.ev .line:hover { background: var(--panel2); }
+.ev .t { color: var(--muted); font-size: 12px; }
+.ev .d { font-weight: 700; text-align: center; border-radius: 4px; font-size: 12px; }
+.ev.up .d { color: var(--up); background: var(--up-weak); }
+.ev.down .d { color: var(--down); background: var(--down-weak); }
+.ev.sys .d { color: var(--muted); }
+.ev .ti { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev .ti .qn { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.ev.sys .ti { color: var(--muted); }
+.ev.lv-error .ti { color: var(--err); }
+.ev .st { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+.ev .detail { display: none; padding: 4px 12px 12px 40px; }
+.ev.open .detail { display: grid; gap: 8px; }
+table.kv { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.kv th, table.kv td { border: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; word-break: break-all; }
+table.kv th { background: var(--panel2); font-weight: 600; white-space: nowrap; color: var(--muted); }
+.replies { display: flex; gap: 6px; flex-wrap: wrap; }
+.state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.err-text { color: var(--err); }
+.empty { color: var(--muted); padding: 24px; text-align: center; }
+.toast { position: fixed; right: 16px; bottom: 16px; background: var(--text); color: var(--panel); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 70vw; z-index: 9; }
+.toast.show { opacity: .95; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>HJ212 调试工具</h1>
+    <div class="sub">模拟现场机（数采仪）连平台：2005 / 2017 / 2025</div>
+  </div>
+  <nav class="tabs">
+    <button data-tab="debug" class="active">调试</button>
+    <button data-tab="parse">报文解析</button>
+    <button data-tab="state">设备状态</button>
+  </nav>
+  <div class="spacer"></div>
+  <span class="pill" id="connPill"><span class="dot"></span><span id="connText">未连接</span></span>
+  <button class="btn primary" id="connBtn">连接</button>
+  <button class="btn" id="themeBtn" title="切换明暗主题">◐</button>
+</header>
+
+<main>
+  <!-- ========== 调试 ========== -->
+  <section class="page active" id="page-debug">
+    <div class="grid">
+      <!-- 配置 -->
+      <div class="card" id="cfgCard">
+        <h2>设备配置 <span class="hint" id="saveHint"></span></h2>
+        <details class="sec" open>
+          <summary>连接</summary>
+          <div class="inner">
+            <div class="row2">
+              <label class="f"><span>平台地址</span><input data-k="host"></label>
+              <label class="f"><span>端口</span><input data-k="port" type="number" min="1" max="65535"></label>
+            </div>
+            <label class="c"><input type="checkbox" data-k="reconnect"> 断线 5 秒后自动重连</label>
+          </div>
+        </details>
+        <details class="sec" open>
+          <summary>身份</summary>
+          <div class="inner">
+            <div class="row2">
+              <label class="f"><span>协议版本</span>
+                <select data-k="version" data-num>
+                  <option value="2025">HJ212-2025（Flag 8~11）</option>
+                  <option value="2017">HJ212-2017（Flag 4~7）</option>
+                  <option value="2005">HJ212-2005（Flag 0~3）</option>
+                </select></label>
+              <label class="f"><span>访问密码 PW</span><input data-k="pw" class="mono" maxlength="6"></label>
+            </div>
+            <label class="f"><span>MN <span>2025 版没激活时留空</span></span><input data-k="mn" class="mono"></label>
+            <label class="f"><span>系统编码 ST</span><select data-k="st" id="stSelect"></select></label>
+            <label class="f v2025"><span>硬件序号 i23005 <span>1001 / 1002 用</span></span><input data-k="hardwareSn" class="mono"></label>
+          </div>
+        </details>
+        <details class="sec v2025" open>
+          <summary>2025 版加密（SM4）</summary>
+          <div class="inner">
+            <label class="f"><span>通信密钥 <span>16 个字符，空表示不加密</span></span>
+              <div class="row"><input data-k="key" class="mono" maxlength="16" style="flex:1"><button class="btn small" id="genKey">随机</button></div></label>
+            <label class="c"><input type="checkbox" data-k="encrypt"> 按标准加密 2xxx、1014、3020</label>
+            <div class="hint">只加密 CP=&amp;&amp; 和 &amp;&amp; 之间，最后不足 16 字节明文；长度和 CRC 按明文算。平台下发 1014 换密钥后，旧密钥还能解开收到的报文。</div>
+          </div>
+        </details>
+        <details class="sec" open>
+          <summary>应答与故障</summary>
+          <div class="inner">
+            <label class="c"><input type="checkbox" data-k="autoReply"> 自动应答平台命令</label>
+            <label class="c"><input type="checkbox" data-k="dataNeedAck"> 上传数据要求平台应答（Flag A 位）</label>
+            <label class="c"><input type="checkbox" data-k="historyNeedAck"> 平台提取的历史数据也要求应答</label>
+            <div class="row2">
+              <label class="f"><span>超时 OverTime（秒）</span><input data-k="overTime" type="number" min="1"></label>
+              <label class="f"><span>重发 ReCount（次）</span><input data-k="reCount" type="number" min="0"></label>
+            </div>
+            <div class="row2">
+              <label class="f"><span>丢弃接下来的命令</span><input data-k="dropCommands" type="number" min="0"></label>
+              <label class="f"><span>时钟偏差（秒）</span><input data-k="clockOffset" type="number"></label>
+            </div>
+          </div>
+        </details>
+        <details class="sec">
+          <summary>自动上报</summary>
+          <div class="inner">
+            <div class="row"><label class="c" style="flex:1"><input type="checkbox" data-k="realtimeAuto"> 实时数据 2011，间隔</label><input data-k="rtdInterval" type="number" min="1" style="width:76px"><span class="hint">秒</span></div>
+            <div class="row"><label class="c" style="flex:1"><input type="checkbox" data-k="minuteAuto"> 分钟数据 2051，每</label>
+              <select data-k="minInterval" data-num style="width:76px"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>10</option><option>12</option><option>15</option><option>20</option><option>30</option></select><span class="hint">分钟</span></div>
+            <label class="c"><input type="checkbox" data-k="hourAuto"> 整点上传小时数据，零点上传日数据</label>
+            <div class="row v2025"><span style="flex:1">心跳 9015 间隔（0 不发）</span><input data-k="heartbeatSeconds" type="number" min="0" style="width:76px"><span class="hint">秒</span></div>
+            <label class="c"><input type="checkbox" data-k="calibrateOnConnect"> 连上后发 1013 请求校时</label>
+          </div>
+        </details>
+        <details class="sec">
+          <summary>监测因子</summary>
+          <div class="inner">
+            <label class="f"><span>预设</span>
+              <select id="preset">
+                <option value="">选一个预设……</option>
+                <option value="water">废水（ST 32）</option>
+                <option value="gas">废气（ST 31）</option>
+                <option value="noise">噪声（ST 23）</option>
+                <option value="power">设施用电（ST 44，2025）</option>
+                <option value="status">关键生产工况（ST 45，2025）</option>
+                <option value="water2005">2005 版废水编码</option>
+              </select></label>
+            <label class="f"><span>每行：编码 基准值 小数位</span><textarea id="factors" class="mono" rows="7"></textarea></label>
+          </div>
+        </details>
+      </div>
+
+      <!-- 发送 -->
+      <div class="card">
+        <h2>发送报文</h2>
+        <div class="body" style="display:grid;gap:8px">
+          <div class="row2">
+            <label class="f"><span>模板</span><select id="tpl"></select></label>
+            <label class="f"><span>命令编码 CN</span><input id="sCn" class="mono" maxlength="4"></label>
+          </div>
+          <div class="note" id="tplNote"></div>
+          <div class="row2">
+            <label class="f"><span>ST</span><select id="sSt"></select></label>
+            <label class="f"><span>QN <span>空则自动生成</span></span><input id="sQn" class="mono" placeholder="自动"></label>
+          </div>
+          <div class="row">
+            <label class="c"><input type="checkbox" id="sAck"> 要求应答</label>
+            <label class="c v2025"><input type="checkbox" id="sRf"> RF=1 补传</label>
+            <label class="c"><input type="checkbox" id="sEmptyMn"> MN 为空</label>
+            <label class="c"><input type="checkbox" id="sBadCrc"> 错误 CRC</label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>分包（数据段超过多少字节，0 不分）</span><input id="sSplit" type="number" min="0" value="0"></label>
+            <label class="f v2025"><span>加密</span><select id="sEnc"><option value="auto">自动（按标准）</option><option value="on">加密</option><option value="off">不加密</option></select></label>
+          </div>
+          <label class="f"><span>CP 内容（不含两头的 &amp;&amp;） <a href="#" id="regen">重新生成</a></span>
+            <textarea id="sCp" class="mono" rows="6" spellcheck="false"></textarea></label>
+          <div>
+            <div class="row" style="justify-content:space-between;margin-bottom:4px"><span class="hint">帧预览</span><span id="pvMeta"></span></div>
+            <div id="preview" class="frame mono"></div>
+          </div>
+          <div class="row"><button class="btn primary" id="sendBtn">发送</button><span class="hint" id="sendHint"></span></div>
+          <details class="sec" style="border:1px solid var(--line);border-radius:8px">
+            <summary>原始报文</summary>
+            <div class="inner">
+              <textarea id="raw" class="mono" rows="4" spellcheck="false" placeholder="##0087QN=...;CP=&&&&2200&#10;也可以只写数据段（自动补包头、长度、CRC），或者十六进制"></textarea>
+              <div class="row"><label class="c"><input type="checkbox" id="rawFix" checked> 重新计算长度和 CRC</label><div class="spacer"></div><button class="btn" id="rawBtn">发送原始报文</button></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 日志 -->
+      <div class="card log-col">
+        <h2>报文日志 <span class="hint" id="logCount"></span></h2>
+        <div class="log-tools">
+          <select id="fDir"><option value="">全部</option><option value="up">上行（设备发出）</option><option value="down">下行（平台发来）</option><option value="sys">系统</option></select>
+          <input type="search" id="fText" placeholder="按 CN、QN、内容筛选">
+          <label class="c"><input type="checkbox" id="follow" checked> 跟随最新</label>
+          <div class="spacer"></div>
+          <button class="btn small" id="expandAll">全部收起</button>
+          <button class="btn small danger" id="clearLog">清空</button>
+        </div>
+        <div id="log"><div class="empty" id="logEmpty">还没有报文。先在左边配好平台地址，点右上角"连接"。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 报文解析 ========== -->
+  <section class="page" id="page-parse">
+    <div class="card" style="max-width:1100px">
+      <h2>报文解析</h2>
+      <div class="body" style="display:grid;gap:8px">
+        <textarea id="pText" class="mono" rows="5" spellcheck="false" placeholder="粘贴整帧 ##...、只有数据段 QN=...，或者十六进制"></textarea>
+        <div class="row">
+          <label class="f" style="flex:1"><span>密钥（可选，解加密报文；不填用设备当前密钥）</span><input id="pKey" class="mono" maxlength="16"></label>
+          <button class="btn primary" id="pBtn" style="align-self:end">解析</button>
+          <button class="btn" id="pSample" style="align-self:end">附录 A.1 示例</button>
+        </div>
+        <div id="pOut"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 设备状态 ========== -->
+  <section class="page" id="page-state">
+    <div class="state-grid" id="stateGrid"></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+let catalog = {templates: [], st: {}, cn: {}};
+let cfg = null;
+let state = null;
+const rows = new Map();
+const MAX_ROWS = 1500;
+
+function toast(msg, ms = 2400) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+async function api(path, body) {
+  const res = await fetch('/api/' + path, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+
+// ---------- 主题 ----------
+(function () {
+  let t = null;
+  try { t = localStorage.getItem('hj212-theme'); } catch (e) { /* 无痕模式 */ }
+  if (t) document.documentElement.dataset.theme = t;
+  $('#themeBtn').onclick = () => {
+    const dark = document.documentElement.dataset.theme
+      ? document.documentElement.dataset.theme === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('hj212-theme', next); } catch (e) { /* 忽略 */ }
+  };
+})();
+
+// ---------- 页签 ----------
+$$('nav.tabs button').forEach(b => b.onclick = () => {
+  $$('nav.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + b.dataset.tab));
+  if (b.dataset.tab === 'state') renderState();
+});
+
+// ---------- 配置 ----------
+const PRESETS = {
+  water: {st: '32', f: 'w00000 17.5 1\nw01018 45 1\nw21003 1.5 2\nw21011 0.3 3\nw21001 12 2\nw01001 7.2 2'},
+  gas: {st: '31', f: 'a00000 25 2\na34013 8 2\na21026 20 1\na21002 45 1\na19001 9.5 1\na01011 12 2\na01012 120 1\na01014 6 1'},
+  noise: {st: '23', f: 'LA 52 1\na01007 3.0 1'},
+  power: {st: '44', f: 'd20105 220 2\nd20205 220.9 2\nd20305 221.1 2\nd20405 0.24 2'},
+  status: {st: '45', f: 'p99101 0 0\np99102 0 0'},
+  water2005: {st: '32', f: 'B01 17.5 1\n011 45 1\n060 1.5 2\n001 7.2 2'}
+};
+
+function factorsText(list) {
+  return (list || []).map(f => [f.code, f.base, f.decimals].join(' ')).join('\n');
+}
+
+function parseFactors(text) {
+  return text.split(/\n/).map(l => l.trim()).filter(Boolean).map(l => {
+    const p = l.split(/[\s,，]+/);
+    return {code: p[0], base: parseFloat(p[1]) || 0, decimals: p[2] === undefined ? 2 : parseInt(p[2], 10) || 0};
+  });
+}
+
+function fillConfig(c, force) {
+  $$('#cfgCard [data-k]').forEach(el => {
+    if (!force && document.activeElement === el) return;
+    const v = c[el.dataset.k];
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v == null ? '' : v;
+  });
+  if (force || document.activeElement !== $('#factors')) $('#factors').value = factorsText(c.factors);
+  applyVersionVisibility(c.version);
+}
+
+function readConfig() {
+  const c = Object.assign({}, cfg || {});
+  $$('#cfgCard [data-k]').forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === 'checkbox') c[k] = el.checked;
+    else if (el.type === 'number' || el.hasAttribute('data-num')) c[k] = el.value === '' ? 0 : Number(el.value);
+    else c[k] = el.value.trim();
+  });
+  c.factors = parseFactors($('#factors').value);
+  return c;
+}
+
+function applyVersionVisibility(v) {
+  $$('.v2025').forEach(el => el.style.opacity = Number(v) === 2025 ? '' : '.45');
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  $('#saveHint').textContent = '保存中…';
+  saveTimer = setTimeout(async () => {
+    try {
+      const s = await api('config', readConfig());
+      onState(s);
+      $('#saveHint').textContent = '已保存';
+      refreshPreview();
+    } catch (e) {
+      $('#saveHint').textContent = '';
+      toast('配置没保存：' + e.message);
+    }
+  }, 350);
+}
+
+$('#cfgCard').addEventListener('input', e => { if (e.target.matches('[data-k], #factors')) scheduleSave(); });
+$('#cfgCard').addEventListener('change', e => {
+  if (e.target.matches('[data-k="version"]')) applyVersionVisibility(e.target.value);
+  if (e.target.matches('[data-k], #factors')) scheduleSave();
+});
+$('#preset').onchange = e => {
+  const p = PRESETS[e.target.value];
+  if (!p) return;
+  $('#factors').value = p.f;
+  $('[data-k="st"]').value = p.st;
+  if (e.target.value === 'water2005') $('[data-k="version"]').value = '2005';
+  if (e.target.value === 'power' || e.target.value === 'status') $('[data-k="version"]').value = '2025';
+  applyVersionVisibility($('[data-k="version"]').value);
+  e.target.value = '';
+  scheduleSave();
+  setTimeout(loadTemplate, 450);
+};
+$('#genKey').onclick = () => {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const a = new Uint32Array(16);
+  crypto.getRandomValues(a);
+  $('[data-k="key"]').value = Array.from(a, x => chars[x % chars.length]).join('');
+  scheduleSave();
+};
+
+// ---------- 连接 ----------
+$('#connBtn').onclick = async () => {
+  try {
+    if (state && (state.connected || state.connecting)) await api('disconnect', {});
+    else { await api('config', readConfig()); await api('connect', {}); }
+  } catch (e) { toast(e.message); }
+};
+
+function onState(s) {
+  state = s;
+  cfg = s.config;
+  fillConfig(cfg, false);
+  const pill = $('#connPill');
+  pill.classList.toggle('on', s.connected);
+  pill.classList.toggle('wait', !s.connected && s.connecting);
+  $('#connText').textContent = s.connected ? ('已连接 ' + (s.remote || '').replace(/^\//, '')) : s.connecting ? '连接中…' : '未连接';
+  $('#connBtn').textContent = s.connected || s.connecting ? '断开' : '连接';
+  $('#connBtn').classList.toggle('primary', !(s.connected || s.connecting));
+  if ($('#page-state').classList.contains('active')) renderState();
+}
+
+// ---------- 发送 ----------
+function buildRequest() {
+  return {
+    cn: $('#sCn').value.trim(), st: $('#sSt').value, qn: $('#sQn').value.trim(), cp: $('#sCp').value,
+    needAck: $('#sAck').checked, refill: $('#sRf').checked, emptyMn: $('#sEmptyMn').checked,
+    badCrc: $('#sBadCrc').checked, split: Number($('#sSplit').value) || 0, encrypt: $('#sEnc').value
+  };
+}
+
+async function loadTemplate() {
+  const id = $('#tpl').value;
+  const t = catalog.templates.find(x => x.id === id);
+  try {
+    const d = await api('template?id=' + encodeURIComponent(id));
+    if (id !== 'custom') {
+      $('#sCn').value = d.cn;
+      $('#sSt').value = t && t.st ? t.st : '';
+      $('#sAck').checked = !!d.needAck && (cfg ? cfg.dataNeedAck || !d.cn.startsWith('2') : true);
+      $('#sEmptyMn').checked = !!d.emptyMn;
+      $('#sCp').value = d.cp;
+    }
+    let note = d.note || '';
+    if (t && t.since === 2025 && cfg && cfg.version !== 2025) note += ' —— 这是 2025 版新增的命令，当前设备是 ' + cfg.version + ' 版';
+    $('#tplNote').textContent = note;
+  } catch (e) { toast(e.message); }
+  refreshPreview();
+}
+
+let pvTimer = null;
+function refreshPreview() {
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(async () => {
+    const req = buildRequest();
+    if (!/^\d{4}$/.test(req.cn)) { $('#preview').innerHTML = '<span class="hint">填好 4 位 CN 后显示</span>'; $('#pvMeta').innerHTML = ''; return; }
+    try {
+      const frames = await api('preview', req);
+      $('#preview').innerHTML = frames.map((f, i) =>
+        (frames.length > 1 ? '<div class="hint">第 ' + (i + 1) + ' 包</div>' : '') + esc(f.text) +
+        (f.encrypted ? '\n<span class="hint">明文：</span>' + esc(f.plain) : '')).join('\n');
+      const f = frames[0];
+      $('#pvMeta').innerHTML = [
+        frames.length > 1 ? '<span class="badge">' + frames.length + ' 包</span>' : '',
+        '<span class="badge">长度 ' + esc(f.lengthField) + '</span>',
+        '<span class="badge ' + (f.crcOk ? '' : 'error') + '">CRC ' + esc(f.crcField) + '</span>',
+        f.encrypted ? '<span class="badge enc">SM4 加密</span>' : ''
+      ].join(' ');
+    } catch (e) {
+      $('#preview').innerHTML = '<span class="err-text">' + esc(e.message) + '</span>';
+      $('#pvMeta').innerHTML = '';
+    }
+  }, 250);
+}
+['#sCn', '#sSt', '#sQn', '#sCp', '#sAck', '#sRf', '#sEmptyMn', '#sBadCrc', '#sSplit', '#sEnc'].forEach(s => {
+  $(s).addEventListener('input', refreshPreview);
+  $(s).addEventListener('change', refreshPreview);
+});
+$('#tpl').onchange = loadTemplate;
+$('#regen').onclick = e => { e.preventDefault(); loadTemplate(); };
+$('#sendBtn').onclick = async () => {
+  try {
+    const ids = await api('send', buildRequest());
+    $('#sendHint').textContent = '已发送 ' + ids.length + ' 包';
+    // DataTime、QN 每次都应该是新的
+    if ($('#tpl').value !== 'custom') loadTemplate(); else refreshPreview();
+  } catch (e) { toast(e.message); }
+};
+$('#rawBtn').onclick = async () => {
+  try { await api('raw', {text: $('#raw').value, fix: $('#rawFix').checked}); toast('已发送'); } catch (e) { toast(e.message); }
+};
+
+// ---------- 日志 ----------
+const DIR = {up: '↑', down: '↓', sys: '·'};
+
+function frameDetail(f, ev) {
+  if (!f) return '';
+  const p = f.packet;
+  let h = '';
+  if (f.error) h += '<div class="err-text">' + esc(f.error) + '</div>';
+  h += '<div class="frame mono">' + esc(f.text) + '</div>';
+  if (f.encrypted) h += '<div><div class="hint">解密后的数据段</div><div class="frame mono">' + esc(f.plain) + '</div></div>';
+  h += '<div class="row">' + [
+    '<span class="badge">长度 ' + esc(f.lengthField) + (f.lengthOk === false ? '（实际 ' + f.dataLength + '）' : '') + '</span>',
+    '<span class="badge ' + (f.crcOk ? 'ok' : 'error') + '">CRC ' + esc(f.crcField) + (f.crcOk ? ' 正确' : ' 应为 ' + esc(f.crcCalc)) + '</span>',
+    f.encrypted ? '<span class="badge enc">SM4 加密</span>' : '',
+    '<span class="badge">' + f.size + ' 字节</span>'
+  ].join(' ') + '</div>';
+  if (p) {
+    h += '<table class="kv"><tr><th>QN</th><td class="mono">' + esc(p.qn) + '</td><th>ST</th><td>' + esc(p.st) + ' ' + esc(p.stName) + '</td></tr>' +
+      '<tr><th>CN</th><td>' + esc(p.cn) + ' ' + esc(p.cnName) + '</td><th>MN</th><td class="mono">' + esc(p.mn) + '</td></tr>' +
+      '<tr><th>PW</th><td class="mono">' + esc(p.pw) + '</td><th>Flag</th><td>' + p.flag + '（' + esc(p.version) + ' 版' +
+      (p.needAck ? '，要求应答' : '') + (p.split ? '，分包 ' + p.pno + '/' + p.pnum : '') + '）' + (p.refill ? ' <span class="badge warn">RF=1 补传</span>' : '') + '</td></tr></table>';
+    const params = Object.entries(p.params || {});
+    if (params.length) h += '<table class="kv"><tr><th>参数</th><th>值</th></tr>' + params.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td class="mono">' + esc(v) + '</td></tr>').join('') + '</table>';
+    if ((p.factors || []).length) {
+      h += '<table class="kv"><tr><th>编码</th><th>字段</th></tr>' + p.factors.map(x =>
+        '<tr><td class="mono">' + esc(x.code) + '</td><td class="mono">' + Object.entries(x.fields).map(([k, v]) => esc(k) + '=' + esc(v)).join('，') +
+        (x.flagName ? ' <span class="badge">' + esc(x.flagName) + '</span>' : '') + '</td></tr>').join('') + '</table>';
+    }
+  }
+  h += '<details><summary class="hint">十六进制</summary><div class="frame mono">' + esc(f.hex) + '</div></details>';
+  if (ev && ev.replyable) {
+    h += '<div class="replies" data-id="' + ev.id + '">' +
+      '<button class="btn small" data-cn="9011" data-code="1">9011 准备执行</button>' +
+      '<button class="btn small" data-cn="9011" data-code="2">9011 拒绝</button>' +
+      '<button class="btn small" data-cn="9011" data-code="3">9011 PW 错误</button>' +
+      '<button class="btn small" data-cn="9012" data-code="1">9012 执行成功</button>' +
+      '<button class="btn small" data-cn="9012" data-code="2">9012 执行失败</button>' +
+      '<button class="btn small" data-cn="9012" data-code="100">9012 没有数据</button>' +
+      '<button class="btn small" data-cn="9013">9013 通知应答</button>' +
+      '<button class="btn small" data-cn="9014">9014 数据应答</button></div>';
+  }
+  return h;
+}
+
+function statusBadge(ev) {
+  return ev.status ? '<span class="badge ' + esc(ev.statusLevel || '') + '">' + esc(ev.status) + '</span>' : '';
+}
+
+function addEvent(ev) {
+  $('#logEmpty') && $('#logEmpty').remove();
+  const el = document.createElement('div');
+  el.className = 'ev ' + ev.dir + ' lv-' + ev.level;
+  el.dataset.dir = ev.dir;
+  const f = ev.frame;
+  el.dataset.search = [ev.title, ev.cn, ev.qn, f ? f.plain : ''].join(' ').toLowerCase();
+  el.innerHTML = '<div class="line"><span class="t mono">' + esc(ev.time) + '</span><span class="d">' + DIR[ev.dir] + '</span>' +
+    '<span class="ti">' + esc(ev.title) + (ev.qn ? '<span class="qn mono">' + esc(ev.qn) + '</span>' : '') + '</span>' +
+    '<span class="st">' + (ev.tag ? '<span class="badge">' + esc(ev.tag) + '</span>' : '') +
+    (f && f.encrypted ? '<span class="badge enc">加密</span>' : '') +
+    (f && f.packet && f.packet.refill ? '<span class="badge warn">补传</span>' : '') +
+    (f && f.crcOk === false ? '<span class="badge error">CRC 错</span>' : '') +
+    '<span class="stat">' + statusBadge(ev) + '</span></span></div>' +
+    (f ? '<div class="detail"></div>' : '');
+  el._ev = ev;
+  rows.set(ev.id, el);
+  applyFilter(el);
+  const log = $('#log');
+  log.appendChild(el);
+  while (log.children.length > MAX_ROWS) { const first = log.firstChild; rows.delete(first._ev && first._ev.id); first.remove(); }
+  $('#logCount').textContent = log.children.length + ' 条';
+  if ($('#follow').checked) log.scrollTop = log.scrollHeight;
+}
+
+$('#log').addEventListener('click', async e => {
+  const btn = e.target.closest('.replies button');
+  if (btn) {
+    const id = Number(btn.parentElement.dataset.id);
+    try { await api('reply', {id, cn: btn.dataset.cn, code: Number(btn.dataset.code || 0)}); } catch (err) { toast(err.message); }
+    return;
+  }
+  const line = e.target.closest('.line');
+  if (!line) return;
+  const el = line.parentElement;
+  const d = el.querySelector('.detail');
+  if (!d) return;
+  if (!el.classList.contains('open') && !d.innerHTML) d.innerHTML = frameDetail(el._ev.frame, el._ev);
+  el.classList.toggle('open');
+});
+
+function applyFilter(el) {
+  const dir = $('#fDir').value;
+  const q = $('#fText').value.trim().toLowerCase();
+  el.style.display = (!dir || el.dataset.dir === dir) && (!q || el.dataset.search.includes(q)) ? '' : 'none';
+}
+$('#fDir').onchange = () => rows.forEach(applyFilter);
+$('#fText').oninput = () => rows.forEach(applyFilter);
+$('#expandAll').onclick = () => $$('#log .ev.open').forEach(x => x.classList.remove('open'));
+$('#clearLog').onclick = () => api('clear', {}).catch(e => toast(e.message));
+
+function connectEvents() {
+  const es = new EventSource('/api/events');
+  es.onmessage = m => {
+    const msg = JSON.parse(m.data);
+    if (msg.type === 'event') addEvent(msg);
+    else if (msg.type === 'update') {
+      const el = rows.get(msg.id);
+      if (el) {
+        el._ev.status = msg.status;
+        el._ev.statusLevel = msg.statusLevel;
+        el.querySelector('.stat').innerHTML = statusBadge(el._ev);
+      }
+    } else if (msg.type === 'clear') {
+      rows.clear();
+      $('#log').innerHTML = '';
+      $('#logCount').textContent = '';
+    } else if (msg.type === 'state') onState(msg.state);
+  };
+  es.onerror = () => {
+    $('#connText').textContent = '工具后台已断开，重连中…';
+    es.close();
+    setTimeout(() => { rows.clear(); $('#log').innerHTML = ''; connectEvents(); }, 2000);
+  };
+}
+
+// ---------- 报文解析 ----------
+$('#pBtn').onclick = async () => {
+  try {
+    const f = await api('parse', {text: $('#pText').value, key: $('#pKey').value});
+    $('#pOut').innerHTML = '<div style="display:grid;gap:8px">' + frameDetail(f) + '</div>';
+  } catch (e) { $('#pOut').innerHTML = '<div class="err-text">' + esc(e.message) + '</div>'; }
+};
+$('#pSample').onclick = () => {
+  $('#pText').value = '##0087QN=20240601085857223;ST=32;CN=1011;PW=123456;MN=010000A8900016F000169DC0;Flag=9;CP=&&&&2200';
+  $('#pBtn').click();
+};
+
+// ---------- 设备状态 ----------
+function kvTable(rowsArr) {
+  return '<table class="kv">' + rowsArr.map(([k, v]) => '<tr><th>' + esc(k) + '</th><td class="mono">' + v + '</td></tr>').join('') + '</table>';
+}
+
+function renderState() {
+  if (!state) return;
+  const s = state, c = s.config;
+  const card = (title, body) => '<div class="card"><h2>' + esc(title) + '</h2><div class="body">' + body + '</div></div>';
+  $('#stateGrid').innerHTML = [
+    card('连接', kvTable([
+      ['状态', s.connected ? '<span class="badge ok">已连接</span>' : s.connecting ? '<span class="badge wait">连接中</span>' : '<span class="badge">未连接</span>'],
+      ['平台', esc(s.remote || c.host + ':' + c.port)], ['本地', esc(s.local || '-')],
+      ['已发送 / 已收到', s.sent + ' / ' + s.received], ['等待应答', s.pending]])),
+    card('身份（平台可修改）', kvTable([
+      ['版本', esc(c.version)], ['MN', esc(c.mn) || '<span class="hint">空（未激活）</span>'], ['PW', esc(c.pw)], ['ST', esc(c.st)],
+      ['硬件序号', esc(c.hardwareSn)], ['密钥', esc(c.key) || '<span class="hint">无</span>'], ['旧密钥', esc(s.oldKey) || '-'],
+      ['密钥创建时间', esc(s.keyCreateTime)]])),
+    card('参数（平台可修改）', kvTable([
+      ['现场机时间', esc(s.deviceTime) + '（偏差 ' + c.clockOffset + ' 秒）'], ['开机时间', esc(s.bootTime)],
+      ['实时数据间隔 RtdInterval', c.rtdInterval + ' 秒'], ['分钟数据间隔 MinInterval', c.minInterval + ' 分钟'],
+      ['超时 / 重发', c.overTime + ' 秒 / ' + c.reCount + ' 次'], ['采样周期', esc(s.samplePeriod)],
+      ['上传实时数据', s.realtimeOn ? '是' : '否'], ['上传运行状态', s.runStatusOn ? '是' : '否'],
+      ['正在执行', s.maintenance ? '数据标记 ' + esc(s.maintenance) : '-'], ['丢弃命令剩余', c.dropCommands]])),
+    card('现场机信息（3020 / 3021）', kvTable(Object.entries(s.info || {}).map(([k, v]) => [k, esc(v)]))),
+    card('现场机日志（i11xxx）', '<table class="kv"><tr><th>时间</th><th>编码</th><th>内容</th></tr>' +
+      (s.logs || []).map(l => '<tr><td class="mono">' + esc(l.time) + '</td><td class="mono">' + esc(l.code) + '</td><td>' + esc(l.text) + '</td></tr>').join('') + '</table>')
+  ].join('');
+}
+setInterval(() => { if ($('#page-state').classList.contains('active')) api('state').then(onState).catch(() => {}); }, 2000);
+
+// ---------- 启动 ----------
+(async function init() {
+  try {
+    catalog = await api('catalog');
+    const stOpts = Object.entries(catalog.st).map(([k, v]) => '<option value="' + k + '">' + k + ' ' + esc(v) + '</option>').join('');
+    $('#stSelect').innerHTML = stOpts;
+    $('#sSt').innerHTML = '<option value="">按设备配置</option>' + stOpts;
+    const groups = {};
+    catalog.templates.forEach(t => (groups[t.group] = groups[t.group] || []).push(t));
+    $('#tpl').innerHTML = Object.entries(groups).map(([g, list]) => '<optgroup label="' + esc(g) + '">' +
+      list.map(t => '<option value="' + esc(t.id) + '">' + esc(t.cn ? t.cn + ' ' : '') + esc(t.name) + '</option>').join('') + '</optgroup>').join('');
+    const s = await api('state');
+    onState(s);
+    fillConfig(s.config, true);
+    await loadTemplate();
+  } catch (e) { toast('初始化失败：' + e.message, 6000); }
+  connectEvents();
+})();
+</script>
+</body>
+</html>

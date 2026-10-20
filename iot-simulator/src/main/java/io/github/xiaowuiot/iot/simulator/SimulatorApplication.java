@@ -3,6 +3,7 @@ package io.github.xiaowuiot.iot.simulator;
 import io.github.xiaowuiot.iot.simulator.hj212.Hj212Command;
 import io.github.xiaowuiot.iot.simulator.jt808.Jt808Command;
 import io.github.xiaowuiot.iot.simulator.slp.SlpCommand;
+import io.github.xiaowuiot.iot.simulator.web.WebCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -12,6 +13,7 @@ import picocli.CommandLine.Command;
  * java -jar iot-simulator.jar jt808 --host 127.0.0.1 --port 7611 --count 100
  * java -jar iot-simulator.jar jt1078 --sim 13800138000 --channel 1 --file sample.h264
  * java -jar iot-simulator.jar hj212 --mn 88888880000001 --interval 60
+ * java -jar iot-simulator.jar web            # 网页调试工具，浏览器打开 http://127.0.0.1:8090
  * </pre>
  */
 @Command(name = "iot-simulator",
@@ -22,7 +24,8 @@ import picocli.CommandLine.Command;
                 Jt808Command.class,
                 SimulatorApplication.Jt1078.class,
                 Hj212Command.class,
-                SlpCommand.class
+                SlpCommand.class,
+                WebCommand.class
         })
 public class SimulatorApplication implements Runnable {
 
