@@ -46,7 +46,7 @@ public class Hj212Server {
         Handler handler = new Handler(sessions, b.passwordChecker, b.listener, commandSender, b.autoTimeSync);
         this.server = new TcpServer("212 接入服务", PROTOCOL, b.port, b.idleSeconds, b.workerThreads,
                 pipeline -> {
-                    Hj212Codecs.addTo(pipeline);
+                    Hj212Codecs.addTo(pipeline, b.keys);
                     pipeline.addLast("handler", handler);
                 },
                 () -> sessions.closeAll(PROTOCOL));
@@ -160,6 +160,13 @@ public class Hj212Server {
                 // 平台提取的历史数据：也交给业务处理（补进数据库），但不回 9014
                 p.markRequested();
             }
+            if (Hj212Commands.HEARTBEAT.equals(p.getCn())) {
+                // 2025 版心跳包（表 C.54）：会话已经刷新过了，要求应答的回 9013，不往下游送
+                if (p.needAck()) {
+                    ctx.writeAndFlush(p.reply(Hj212Commands.NOTIFY_ACK));
+                }
+                return;
+            }
             if (Hj212Commands.TIME_CALIBRATION_REQ.equals(p.getCn())) {
                 onTimeCalibration(ctx, p);
                 return;
@@ -237,6 +244,7 @@ public class Hj212Server {
         private BiPredicate<String, String> passwordChecker = (mn, pw) -> true;
         private Listener listener = Listener.NOOP;
         private boolean autoTimeSync = true;
+        private Hj212Codecs.KeyLookup keys;
 
         public Builder port(int port) {
             this.port = port;
@@ -276,6 +284,14 @@ public class Hj212Server {
          */
         public Builder autoTimeSync(boolean on) {
             this.autoTimeSync = on;
+            return this;
+        }
+
+        /**
+         * 按 MN 查 2025 版的通信密钥（SM4），用来解密加密报文。不设置的话加密报文 CRC 对不上，会被丢弃
+         */
+        public Builder keys(Hj212Codecs.KeyLookup keys) {
+            this.keys = keys;
             return this;
         }
 

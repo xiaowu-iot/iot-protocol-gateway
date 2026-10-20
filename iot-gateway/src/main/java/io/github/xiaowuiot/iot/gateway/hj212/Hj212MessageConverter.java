@@ -44,6 +44,13 @@ public final class Hj212MessageConverter {
             // 平台主动提取的历史数据：下游入库时按 DataTime 覆盖，不能当成新数据触发实时报警
             m.put("requested", true);
         }
+        if (received.isRefill()) {
+            // 2025 版 RF=1：现场机补传的历史数据，和 requested 一样不该触发实时报警
+            m.put("refill", true);
+        }
+        if (received.isEncrypted()) {
+            m.put("encrypted", true);
+        }
         Map<String, Object> factors = new LinkedHashMap<>();
         List<String> unknown = new ArrayList<>();
         for (Map.Entry<String, Map<String, String>> f : p.getFactors().entrySet()) {
@@ -68,7 +75,8 @@ public final class Hj212MessageConverter {
             if (flag != null) {
                 // 停运、维护、故障、校准、通讯异常时的数据不能参与均值计算和超标判断
                 fields.put("valid", Hj212Commands.isValidFlag(flag));
-                fields.put("flagName", Hj212Commands.flagName(flag));
+                // B 在 2017 版是通讯异常，2025 版是闷炉
+                fields.put("flagName", Hj212Commands.flagName(flag, received.version()));
             }
             factors.put(f.getKey(), fields);
         }

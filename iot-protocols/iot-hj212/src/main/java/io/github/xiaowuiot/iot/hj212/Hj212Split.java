@@ -66,7 +66,7 @@ public final class Hj212Split {
 
     private static Hj212Packet emptyPart(Hj212Packet p) {
         Hj212Packet part = new Hj212Packet().setQn(p.getQn()).setSt(p.getSt()).setCn(p.getCn()).setPw(p.getPw())
-                .setMn(p.getMn()).setFlag(p.getFlag() | Hj212Packet.FLAG_SPLIT);
+                .setMn(p.getMn()).setFlag(p.getFlag() | Hj212Packet.FLAG_SPLIT).setRefill(p.isRefill());
         p.getParams().forEach(part::putParam);
         return part;
     }
@@ -78,12 +78,15 @@ public final class Hj212Split {
     }
 
     private static int length(String data) {
-        return data.getBytes(StandardCharsets.US_ASCII).length;
+        return data.getBytes(StandardCharsets.UTF_8).length;
     }
 
     /**
      * 组包：同一个 MN + QN + CN 的分包收齐后合并成一包。每台设备、每次交互一个缓冲，
      * 超过 timeoutMillis 没收齐的丢弃（分包丢了一包，整组数据就不完整了）
+     * <p>
+     * 2025 版不一样：附录 C 的拆分包示例里每一包的 QN 都不同（…534、…535），每包都带 DataTime，单独就能解析入库，
+     * 没法也不需要按 QN 合并，所以 2025 版的分包原样逐包交出去
      */
     public static final class Assembler {
         private final long timeoutMillis;
@@ -102,7 +105,7 @@ public final class Hj212Split {
          * @return 收齐了返回合并后的包，还没收齐返回 null
          */
         public synchronized Hj212Packet add(Hj212Packet p) {
-            if (!p.isSplit() || p.getPnum() == null || p.getPno() == null) {
+            if (!p.isSplit() || p.getPnum() == null || p.getPno() == null || p.version() >= Hj212Packet.VERSION_2025) {
                 return p;
             }
             expire();
@@ -115,7 +118,8 @@ public final class Hj212Split {
             groups.remove(key);
             Hj212Packet first = g.parts.firstEntry().getValue();
             Hj212Packet merged = new Hj212Packet().setQn(first.getQn()).setSt(first.getSt()).setCn(first.getCn())
-                    .setPw(first.getPw()).setMn(first.getMn()).setFlag(first.getFlag() & ~Hj212Packet.FLAG_SPLIT);
+                    .setPw(first.getPw()).setMn(first.getMn()).setFlag(first.getFlag() & ~Hj212Packet.FLAG_SPLIT)
+                    .setRefill(first.isRefill());
             first.getParams().forEach(merged::putParam);
             for (Hj212Packet part : g.parts.values()) {
                 part.getFactors().forEach((code, fields) -> fields.forEach((k, v) -> merged.putFactor(code, k, v)));

@@ -20,6 +20,17 @@ public final class Hj212Factors {
      */
     public static final Pattern CODE_2017 = Pattern.compile("[a-z]\\d{5}");
 
+    /**
+     * 2025 版的 6 位编码：第 1 位类别字母，后 5 位数字或小写字母（新增的用电参数 d 开头、关键生产工况 p 开头，
+     * 像 p11a01 这种第 4 位是字母）
+     */
+    public static final Pattern CODE_2025 = Pattern.compile("[a-z][0-9a-z]{5}");
+
+    /**
+     * 噪声参数：LA、Leq、L5、L10、Ldn……，不是 6 位编码
+     */
+    public static final Pattern NOISE = Pattern.compile("L[0-9A-Za-z]{1,3}");
+
     public static final class Factor {
         public final String code;
         public final String name;
@@ -91,6 +102,9 @@ public final class Hj212Factors {
      * 是不是监测因子编码（而不是 i1xxxx 现场机信息编码之类）
      */
     public static boolean isFactorCode(String code) {
-        return CODE_2017.matcher(code).matches() && code.charAt(0) != 'i';
+        if (code == null || code.isEmpty() || code.charAt(0) == 'i') {
+            return false;
+        }
+        return CODE_2017.matcher(code).matches() || CODE_2025.matcher(code).matches() || NOISE.matcher(code).matches();
     }
 }

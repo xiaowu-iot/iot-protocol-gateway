@@ -31,13 +31,31 @@ package io.github.xiaowuiot.iot.hj212;
  *           9014          数据应答
  * </pre>
  * 具体每条命令 CP 里带哪些字段，以标准原文为准。
+ * <p>
+ * <b>HJ212-2025</b>（2026-01-01 实施）新增了这些命令：
+ * <pre>
+ *           1001          上传数采仪硬件序号（现场机 → 上位机，没激活时 MN 为空，上位机回 9013 后下发 1002）
+ *           1002          设置数采仪 MN 编码（上位机按硬件指纹给数采仪赋 MN）
+ *           1014          现场机获取新密钥 / 上位机下发新密钥，都要加密
+ *           2013          原始监测数据
+ *           2052          噪声单次测量数据
+ *           2062          自动标样核查（校准）数据
+ *           2111          上传炉膛温度 5 分钟均值（垃圾焚烧）
+ *           3015          改成"上传留样信息"（现场机 → 上位机），2017 版是上位机下发"超标留样"
+ *           3022          下发即时留样任务
+ *           3024          启动标样核查
+ *           9015          心跳包（现场机发，上位机回 9013）
+ * </pre>
  */
 public final class Hj212Commands {
 
     public static final String SET_TIMEOUT = "1000";
+    public static final String HARDWARE_SN = "1001";
+    public static final String SET_MN = "1002";
     public static final String GET_TIME = "1011";
     public static final String SET_TIME = "1012";
     public static final String TIME_CALIBRATION_REQ = "1013";
+    public static final String SECRET_KEY = "1014";
     public static final String GET_RTD_INTERVAL = "1061";
     public static final String SET_RTD_INTERVAL = "1062";
     public static final String GET_MIN_INTERVAL = "1063";
@@ -46,18 +64,25 @@ public final class Hj212Commands {
 
     public static final String REALTIME = "2011";
     public static final String STOP_REALTIME = "2012";
+    public static final String RAW_DATA = "2013";
     public static final String RUN_STATUS = "2021";
     public static final String STOP_RUN_STATUS = "2022";
     public static final String DAY = "2031";
     public static final String RUN_TIME_DAY = "2041";
     public static final String MINUTE = "2051";
+    public static final String NOISE_ONCE = "2052";
     public static final String HOUR = "2061";
+    public static final String STANDARD_CHECK_DATA = "2062";
     public static final String RESTART_TIME = "2081";
+    public static final String FURNACE_TEMP = "2111";
 
     public static final String CALIBRATE = "3011";
     public static final String SAMPLE_NOW = "3012";
     public static final String CLEAN = "3013";
     public static final String COMPARE_SAMPLE = "3014";
+    /**
+     * 2017 版：上位机下发"超标留样"；2025 版：现场机上传留样信息
+     */
     public static final String OVER_LIMIT_SAMPLE = "3015";
     public static final String SET_SAMPLE_PERIOD = "3016";
     public static final String GET_SAMPLE_PERIOD = "3017";
@@ -65,11 +90,14 @@ public final class Hj212Commands {
     public static final String GET_SN = "3019";
     public static final String GET_INFO = "3020";
     public static final String SET_INFO = "3021";
+    public static final String SAMPLE_TASK = "3022";
+    public static final String START_STANDARD_CHECK = "3024";
 
     public static final String REQUEST_ACK = "9011";
     public static final String EXEC_RESULT = "9012";
     public static final String NOTIFY_ACK = "9013";
     public static final String DATA_ACK = "9014";
+    public static final String HEARTBEAT = "9015";
 
     // ===== 请求应答 QnRtn =====
     public static final int QN_READY = 1;
@@ -144,13 +172,31 @@ public final class Hj212Commands {
     // ===== 数据标记 xxx-Flag =====
 
     /**
-     * 数据标记：N 正常、F 停运、M 维护、S 手工输入、D 故障、C 校准、T 超限、B 通讯异常。
+     * 2017 版数据标记：N 正常、F 停运、M 维护、S 手工输入、D 故障、C 校准、T 超限、B 通讯异常。
      * <p>
-     * 停运、维护、故障、校准、通讯异常时的数据不是真实排放，<b>不能参与均值计算和超标判断</b>；
-     * 超限（T）是仪器正常、但数值超出了量程或限值，数据本身有效。
+     * 2025 版把标记改成最长 3 个字符、区分大小写，分两类：
+     * <ul>
+     *     <li>自动监测设备标记：N 数据有效、D 故障、C 校准、M 日常维护、T 超量程、Td 关键工况参数故障</li>
+     *     <li>生产工况标记：N 正常运行、St 启动（Stc 冷启动、Sth 热启动）、Sd 停炉（机）、B 闷炉、
+     *     F 停运 / 停排、Sr 故障 / 事故</li>
+     * </ul>
+     * 注意 B 在两版里含义不同：2017 版是"通讯异常"，2025 版是"闷炉"，按版本取名称用 {@link #flagName(String, int)}。
+     * <p>
+     * 停运、维护、故障、校准、通讯异常、启停炉时的数据不是正常工况下的排放，<b>不能参与均值计算和超标判断</b>；
+     * 超限（T）是仪器正常、但数值超出了量程或限值，数据本身有效；故障 / 事故（Sr）时仍在排放，照常判断。
      */
     public static boolean isValidFlag(String flag) {
-        return flag == null || "N".equals(flag) || "T".equals(flag) || "S".equals(flag);
+        return flag == null || "N".equals(flag) || "T".equals(flag) || "S".equals(flag) || "Sr".equals(flag);
+    }
+
+    /**
+     * 按协议版本取标记的中文名：B 在 2025 版是闷炉
+     */
+    public static String flagName(String flag, int version) {
+        if (version >= Hj212Packet.VERSION_2025 && "B".equals(flag)) {
+            return "闷炉";
+        }
+        return flagName(flag);
     }
 
     public static String flagName(String flag) {
@@ -158,6 +204,18 @@ public final class Hj212Commands {
             return "未标记";
         }
         switch (flag) {
+            case "Td":
+                return "关键工况参数故障";
+            case "St":
+                return "启动";
+            case "Stc":
+                return "冷启动";
+            case "Sth":
+                return "热启动";
+            case "Sd":
+                return "停炉（机）";
+            case "Sr":
+                return "故障 / 事故";
             case "N":
                 return "正常";
             case "F":

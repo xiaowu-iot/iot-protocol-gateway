@@ -14,7 +14,8 @@ import java.util.Map;
  *     <li>ST 系统编码：21 地表水、22 空气、31 大气环境污染源、32 地表水体环境污染源、91 系统交互</li>
  *     <li>CN 命令编码：2011 实时数据、2051 分钟数据、2061 小时数据、2031 日数据、9014 数据应答……</li>
  *     <li>MN 设备唯一标识</li>
- *     <li>Flag：bit0 是否需要应答，bit1 是否分包，bit2~7 协议版本（2017 版为 1）</li>
+ *     <li>Flag：bit0 是否需要应答，bit1 是否分包，bit2~7 协议版本（2005 版为 0，2017 版为 1，2025 版为 2）</li>
+ *     <li>RF 补传标志（2025 版新增）：RF=1 表示这是补传的历史数据，放在 PNO 后面、CP 前面，不是补传就没有这个字段</li>
  *     <li>CP 指令参数，{@code &&} 包起来，组之间用分号、组内用逗号分隔</li>
  * </ul>
  */
@@ -32,9 +33,11 @@ public class Hj212Packet {
     public static final String ST_SYSTEM = "91";
 
     /**
-     * 2017 版的版本号是 1，写在 Flag 的 bit2~7
+     * 版本号写在 Flag 的 bit2~7：2005 版是 0，2017 版是 1，2025 版是 2
      */
+    public static final int VERSION_2005 = 0;
     public static final int VERSION_2017 = 1;
+    public static final int VERSION_2025 = 2;
     public static final int FLAG_NEED_ACK = 1;
     public static final int FLAG_SPLIT = 1 << 1;
 
@@ -46,6 +49,18 @@ public class Hj212Packet {
     private int flag;
     private Integer pnum;
     private Integer pno;
+    /**
+     * 补传标志 RF（2025 版）：true 表示 RF=1，补传的历史数据
+     */
+    private boolean refill;
+    /**
+     * 收到的报文是加密的（2025 版）。不在报文里，接收时由解码器标记
+     */
+    private boolean encrypted;
+    /**
+     * 发送时用这个密钥加密 CP（2025 版，见 {@link Hj212Crypto}）。null 表示明文发送
+     */
+    private byte[] cipherKey;
     /**
      * 是不是对平台某个请求的回复数据（比如平台提取的历史数据）。不在报文里，接收时由服务端标记
      */
@@ -222,9 +237,40 @@ public class Hj212Packet {
         return this;
     }
 
+    public boolean isRefill() {
+        return refill;
+    }
+
+    public Hj212Packet setRefill(boolean refill) {
+        this.refill = refill;
+        return this;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
+    }
+
+    public Hj212Packet markEncrypted() {
+        this.encrypted = true;
+        return this;
+    }
+
+    public byte[] getCipherKey() {
+        return cipherKey;
+    }
+
+    /**
+     * 发送时加密 CP。key 为 null 表示明文
+     */
+    public Hj212Packet encryptWith(byte[] key) {
+        this.cipherKey = key;
+        return this;
+    }
+
     @Override
     public String toString() {
-        return "Hj212Packet{CN=" + cn + ", MN=" + mn + ", QN=" + qn + ", Flag=" + flag + ", params=" + params
+        return "Hj212Packet{CN=" + cn + ", MN=" + mn + ", QN=" + qn + ", Flag=" + flag + (refill ? ", RF=1" : "")
+                + ", params=" + params
                 + ", factors=" + factors + '}';
     }
 }
