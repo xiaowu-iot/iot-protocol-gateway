@@ -441,8 +441,11 @@ $('#connBtn').onclick = async () => {
 };
 
 function onState(s) {
+  const before = cfg ? [cfg.version, cfg.key, cfg.mn, cfg.pw, cfg.st, cfg.encrypt].join('|') : '';
   state = s;
   cfg = s.config;
+  // 版本、密钥、MN、密码这些可能被平台命令或另一个页面改掉，帧预览跟着刷新
+  if (before !== [cfg.version, cfg.key, cfg.mn, cfg.pw, cfg.st, cfg.encrypt].join('|')) refreshPreview();
   fillConfig(cfg, false);
   const pill = $('#connPill');
   pill.classList.toggle('on', s.connected);

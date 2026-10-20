@@ -154,10 +154,15 @@ public class Hj212Server {
             }
             if (commandSender.onPacket(p)) {
                 if (!Hj212Commands.isData(p.getCn())) {
-                    // 9011 / 9012 / 9013，以及参数命令的返回数据（比如 1011 的现场机时间）：交给等待方就够了
+                    // 9011 / 9012 / 9013，以及参数命令的返回数据（比如 1011 的现场机时间）：交给等待方就够了。
+                    // 2025 版返回的数据包有自己的 QN（比如提取日志 3020），要求应答的照样回 9014
+                    if (needsRequestedAck(p) && !received.isSplit()) {
+                        ctx.writeAndFlush(p.dataAck());
+                    }
                     return;
                 }
-                // 平台提取的历史数据：也交给业务处理（补进数据库），但不回 9014
+                // 平台提取的历史数据：也交给业务处理（补进数据库）。2017 版回包和请求同一个 QN，不回 9014；
+                // 2025 版每包是新 QN，Flag 要求应答时（附录 C.56）要回 9014，否则现场机会重发
                 p.markRequested();
             }
             if (Hj212Commands.HEARTBEAT.equals(p.getCn())) {
@@ -178,10 +183,18 @@ public class Hj212Server {
                     return;
                 }
                 // 只有 Flag 要求应答的才回，回多了有的数采仪会当成指令，报错；分包的已经逐包应答过了
-                if (packet.needAck() && !received.isSplit() && !packet.isRequested() && Hj212Commands.isData(packet.getCn())) {
+                boolean ack = packet.isRequested() ? needsRequestedAck(packet) : packet.needAck();
+                if (ack && !received.isSplit() && Hj212Commands.isData(packet.getCn())) {
                     ctx.writeAndFlush(packet.dataAck());
                 }
             });
+        }
+
+        /**
+         * 命令返回的数据要不要回 9014：只有 2025 版、Flag 要求应答、不是 9011~9014 这类交互包
+         */
+        private static boolean needsRequestedAck(Hj212Packet p) {
+            return p.needAck() && p.version() >= Hj212Packet.VERSION_2025 && p.getCn() != null && !p.getCn().startsWith("90");
         }
 
         /**

@@ -172,11 +172,17 @@ public class Hj212CommandSender {
 
     /**
      * 现场机发来的包，如果是某个请求的回复（9011 / 9012 / 9013 或者带同一个 QN 的数据），在这里处理。
+     * <p>
+     * 2025 版不一样：提取历史数据、提取日志时，返回的每一包数据都有自己的新 QN（附录 C.24~C.26、C.48），
+     * 按 QN 对不上。这时按"同一台设备、同一个 CN、已经回过 9011、还没回 9012"的请求来归属。
      *
      * @return true 表示是请求的回复
      */
     public boolean onPacket(Hj212Packet p) {
         Pending pd = pending.get(key(p.getMn(), p.getQn()));
+        if (pd == null) {
+            pd = waitingForData(p);
+        }
         if (pd == null) {
             return false;
         }
@@ -213,6 +219,24 @@ public class Hj212CommandSender {
                 pd.result.data.add(p);
         }
         return true;
+    }
+
+    /**
+     * 2025 版的命令返回数据：找这台设备正在等数据的同 CN 请求。只认 2025 版的包，2017 版回包的 QN 和请求一样，不需要猜
+     */
+    private Pending waitingForData(Hj212Packet p) {
+        if (p.version() < Hj212Packet.VERSION_2025 || p.getCn() == null || p.getCn().startsWith("9")) {
+            return null;
+        }
+        Pending found = null;
+        for (Pending pd : pending.values()) {
+            if (pd.ready && !pd.future.isDone() && pd.request.getCn().equals(p.getCn())
+                    && pd.request.getMn().equals(p.getMn())
+                    && (found == null || pd.request.getQn().compareTo(found.request.getQn()) > 0)) {
+                found = pd;
+            }
+        }
+        return found;
     }
 
     public int pendingCount() {

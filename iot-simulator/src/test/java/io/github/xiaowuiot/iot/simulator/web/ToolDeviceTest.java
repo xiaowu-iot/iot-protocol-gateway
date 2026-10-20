@@ -108,12 +108,20 @@ class ToolDeviceTest {
         assertTrue(r.isSuccess(), r.toString());
         assertNotNull(r.data.get(0).getParam("SystemTime"));
 
-        // 2025 版提取小时数据：每包新 QN，平台按普通数据收下；最后 9012 成功
+        // 2025 版提取小时数据：每包新 QN，平台按"同 CN、等数据中的请求"归属到这次提取；
+        // 回包要求应答（附录 C.56），平台逐包回 9014
+        device.call(() -> {
+            device.config().historyNeedAck = true;
+            return null;
+        });
         LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(8)).withMinute(0).withSecond(0).withNano(0);
         Hj212CommandSender.Result h = sender.send(MN, "2061",
                 Map.of("BeginTime", now.minusHours(3).format(T), "EndTime", now.minusHours(1).format(T)), 10).get(15, TimeUnit.SECONDS);
         assertTrue(h.isSuccess(), h.toString());
-        await(() -> received.stream().filter(p -> "2061".equals(p.getCn())).count() == 3);
+        assertEquals(3, h.data.size());
+        assertNotEquals(h.qn, h.data.get(0).getQn());
+        await(() -> received.stream().filter(p -> "2061".equals(p.getCn()) && p.isRequested()).count() == 3);
+        await(() -> hub.snapshot().stream().filter(e -> String.valueOf(e.get("status")).startsWith("已收到 9014")).count() == 3);
 
         // 改密码：之后的应答用新密码
         Hj212CommandSender.Result pw = sender.send(MN, "1072", Map.of("NewPW", "654321"), 5).get(15, TimeUnit.SECONDS);

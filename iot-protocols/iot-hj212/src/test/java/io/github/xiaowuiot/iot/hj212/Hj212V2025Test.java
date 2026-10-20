@@ -2,6 +2,7 @@ package io.github.xiaowuiot.iot.hj212;
 
 import io.github.xiaowuiot.iot.codec.session.SessionManager;
 import io.github.xiaowuiot.iot.hj212.codec.Hj212Codecs;
+import io.github.xiaowuiot.iot.hj212.server.Hj212CommandSender;
 import io.github.xiaowuiot.iot.hj212.server.Hj212Server;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -13,8 +14,11 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -215,6 +219,59 @@ class Hj212V2025Test {
         assertEquals("20240601085857535", ack2.getQn());
         assertEquals(8, ack2.getFlag());
         assertNull(ch.readOutbound());
+    }
+
+    @Test
+    void historyPacketsWithNewQnBelongToTheRequest() throws Exception {
+        // 附录 C.56：平台提取小时数据，现场机每包用新 QN 返回，Flag=9 要求应答
+        SessionManager sessions = new SessionManager();
+        List<Hj212Packet> received = new ArrayList<>();
+        Hj212CommandSender sender = new Hj212CommandSender(sessions);
+        Hj212Server.Handler handler = new Hj212Server.Handler(sessions, (mn, pw) -> true, (s, p) -> {
+            received.add(p);
+            return CompletableFuture.completedFuture(null);
+        }, sender, false);
+        EmbeddedChannel ch = new EmbeddedChannel(new ChannelInitializer<EmbeddedChannel>() {
+            @Override
+            protected void initChannel(EmbeddedChannel c) {
+                Hj212Codecs.addTo(c.pipeline());
+                c.pipeline().addLast(handler);
+            }
+        });
+        // 先来一条心跳，平台才知道设备在线、用的 2025 版
+        ch.writeInbound(ascii(Hj212Format.frame("QN=20240601085800000;ST=32;CN=9015;PW=123456;MN=" + MN + ";Flag=9;CP=&&&&")));
+        readOutbound(ch);
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("BeginTime", "20240601080000");
+        params.put("EndTime", "20240601090000");
+        CompletableFuture<Hj212CommandSender.Result> f = sender.send(MN, "2061", params, 10);
+        Hj212Packet req = readOutbound(ch);
+        assertEquals(9, req.getFlag());
+        String qn = req.getQn();
+        ch.writeInbound(ascii(Hj212Format.frame("QN=" + qn + ";ST=91;CN=9011;PW=123456;MN=" + MN + ";Flag=8;CP=&&QnRtn=1&&")));
+        ch.writeInbound(ascii(Hj212Format.frame("QN=20240601085857534;ST=32;CN=2061;PW=123456;MN=" + MN + ";Flag=9;"
+                + "CP=&&DataTime=20240601080000;w01018-Avg=40.1,w01018-Flag=N&&")));
+        ch.writeInbound(ascii(Hj212Format.frame("QN=20240601085857535;ST=32;CN=2061;PW=123456;MN=" + MN + ";Flag=9;"
+                + "CP=&&DataTime=20240601090000;w01018-Avg=41.2,w01018-Flag=N&&")));
+        ch.writeInbound(ascii(Hj212Format.frame("QN=" + qn + ";ST=91;CN=9012;PW=123456;MN=" + MN + ";Flag=8;CP=&&ExeRtn=1&&")));
+
+        Hj212CommandSender.Result r = f.get(1, TimeUnit.SECONDS);
+        assertTrue(r.isSuccess());
+        assertEquals(2, r.data.size());
+        assertEquals("41.2", r.data.get(1).getFactors().get("w01018").get("Avg"));
+        // 交给下游时标成"平台提取的数据"，不触发实时报警
+        assertEquals(2, received.size());
+        assertTrue(received.get(0).isRequested());
+        // 每包都回了 9014，QN 是这一包的
+        assertEquals("20240601085857534", readOutbound(ch).getQn());
+        assertEquals("20240601085857535", readOutbound(ch).getQn());
+        assertNull(ch.readOutbound());
+
+        // 没有在等数据的请求时，同样的包按普通上报处理
+        ch.writeInbound(ascii(Hj212Format.frame("QN=20240601100000001;ST=32;CN=2061;PW=123456;MN=" + MN + ";Flag=9;"
+                + "CP=&&DataTime=20240601090000;w01018-Avg=41.2,w01018-Flag=N&&")));
+        assertFalse(received.get(2).isRequested());
     }
 
     @Test
