@@ -1,6 +1,6 @@
 package io.github.xiaowuiot.iot.simulator.jt808;
 
-import io.github.xiaowuiot.iot.jt808.codec.Jt808Codecs;
+import io.github.xiaowuiot.protocol.jt808.codec.Jt808Codecs;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 

@@ -1,11 +1,11 @@
 package io.github.xiaowuiot.iot.simulator.jt808;
 
-import io.github.xiaowuiot.iot.jt808.body.AlarmExtras;
-import io.github.xiaowuiot.iot.jt808.body.Area;
-import io.github.xiaowuiot.iot.jt808.body.AreaAlarmInfo;
-import io.github.xiaowuiot.iot.jt808.body.GeoUtils;
-import io.github.xiaowuiot.iot.jt808.body.Location;
-import io.github.xiaowuiot.iot.jt808.body.Route;
+import io.github.xiaowuiot.protocol.jt808.body.AlarmExtras;
+import io.github.xiaowuiot.protocol.jt808.body.Area;
+import io.github.xiaowuiot.protocol.jt808.body.AreaAlarmInfo;
+import io.github.xiaowuiot.protocol.jt808.body.GeoUtils;
+import io.github.xiaowuiot.protocol.jt808.body.Location;
+import io.github.xiaowuiot.protocol.jt808.body.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

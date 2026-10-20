@@ -2,7 +2,7 @@ package io.github.xiaowuiot.iot.gateway;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.xiaowuiot.iot.hj212.Hj212Format;
+import io.github.xiaowuiot.protocol.hj212.Hj212Format;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;

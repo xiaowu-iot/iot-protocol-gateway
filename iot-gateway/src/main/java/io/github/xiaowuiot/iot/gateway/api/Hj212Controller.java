@@ -1,9 +1,9 @@
 package io.github.xiaowuiot.iot.gateway.api;
 
-import io.github.xiaowuiot.iot.hj212.Hj212Commands;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
-import io.github.xiaowuiot.iot.hj212.server.Hj212CommandSender;
-import io.github.xiaowuiot.iot.hj212.server.Hj212Server;
+import io.github.xiaowuiot.protocol.hj212.Hj212Commands;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.hj212.server.Hj212CommandSender;
+import io.github.xiaowuiot.protocol.hj212.server.Hj212Server;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

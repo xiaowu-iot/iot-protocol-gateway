@@ -1,12 +1,12 @@
 package io.github.xiaowuiot.iot.gateway.slp;
 
-import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.protocol.codec.session.SessionManager;
 import io.github.xiaowuiot.iot.gateway.config.IotProperties;
 import io.github.xiaowuiot.iot.gateway.message.DeviceMessage;
 import io.github.xiaowuiot.iot.gateway.sink.MessageSinks;
-import io.github.xiaowuiot.iot.slp.SlpMessage;
-import io.github.xiaowuiot.iot.slp.body.SlpBodies;
-import io.github.xiaowuiot.iot.slp.server.SlpServer;
+import io.github.xiaowuiot.protocol.slp.SlpMessage;
+import io.github.xiaowuiot.protocol.slp.body.SlpBodies;
+import io.github.xiaowuiot.protocol.slp.server.SlpServer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;

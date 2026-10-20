@@ -19,10 +19,6 @@
         </license>
     </licenses>
 
-    <!-- 协议库要求 JDK 8+，始终参与构建 -->
-    <modules>
-        <module>iot-protocols</module>
-    </modules>
 
     <profiles>
         <!-- 网关和模拟器是 Spring Boot 3 应用，需要 JDK 17+，用低版本 JDK 构建时自动跳过 -->

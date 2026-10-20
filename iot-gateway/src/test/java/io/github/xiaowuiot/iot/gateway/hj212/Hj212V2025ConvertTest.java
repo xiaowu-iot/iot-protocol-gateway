@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.gateway.hj212;
 
 import io.github.xiaowuiot.iot.gateway.message.DeviceMessage;
-import io.github.xiaowuiot.iot.hj212.Hj212Format;
+import io.github.xiaowuiot.protocol.hj212.Hj212Format;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -1,8 +1,8 @@
 package io.github.xiaowuiot.iot.gateway.api;
 
-import io.github.xiaowuiot.iot.slp.SlpMessage;
-import io.github.xiaowuiot.iot.slp.body.SlpBodies;
-import io.github.xiaowuiot.iot.slp.server.SlpServer;
+import io.github.xiaowuiot.protocol.slp.SlpMessage;
+import io.github.xiaowuiot.protocol.slp.body.SlpBodies;
+import io.github.xiaowuiot.protocol.slp.server.SlpServer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,8 +1,8 @@
 package io.github.xiaowuiot.iot.simulator.hj212;
 
-import io.github.xiaowuiot.iot.hj212.Hj212Commands;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
-import io.github.xiaowuiot.iot.hj212.codec.Hj212Codecs;
+import io.github.xiaowuiot.protocol.hj212.Hj212Commands;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.hj212.codec.Hj212Codecs;
 import io.github.xiaowuiot.iot.simulator.SimulatorStats;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

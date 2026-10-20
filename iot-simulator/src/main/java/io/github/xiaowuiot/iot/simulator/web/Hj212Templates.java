@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.simulator.web;
 
-import io.github.xiaowuiot.iot.hj212.Hj212Format;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.hj212.Hj212Format;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

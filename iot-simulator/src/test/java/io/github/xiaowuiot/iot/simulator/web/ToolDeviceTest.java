@@ -1,10 +1,10 @@
 package io.github.xiaowuiot.iot.simulator.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.xiaowuiot.iot.hj212.Hj212Crypto;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
-import io.github.xiaowuiot.iot.hj212.server.Hj212CommandSender;
-import io.github.xiaowuiot.iot.hj212.server.Hj212Server;
+import io.github.xiaowuiot.protocol.hj212.Hj212Crypto;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.hj212.server.Hj212CommandSender;
+import io.github.xiaowuiot.protocol.hj212.server.Hj212Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

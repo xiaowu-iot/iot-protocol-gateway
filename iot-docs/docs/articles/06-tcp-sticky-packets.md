@@ -128,7 +128,7 @@ Netty 也提供了几个现成的帧解码器：`FixedLengthFrameDecoder`（定�
 
 ## 808 帧解码器的实现
 
-完整代码在仓库的 `iot-codec-core` 模块中，这里只看核心逻辑：
+完整代码在协议库 [iot-protocols](https://github.com/xiaowu-iot/iot-protocols) 的 `protocol-core` 模块中，这里只看核心逻辑：
 
 ```java
 @Override
@@ -230,4 +230,4 @@ bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 
 ---
 
-完整代码：[iot-protocol-gateway](https://github.com/xiaowu-iot/iot-protocol-gateway) 的 `iot-codec-core` 模块
+完整代码：[iot-protocols](https://github.com/xiaowu-iot/iot-protocols) 的 `protocol-core` 模块

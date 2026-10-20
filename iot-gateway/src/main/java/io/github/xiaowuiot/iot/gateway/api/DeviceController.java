@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.gateway.api;
 
-import io.github.xiaowuiot.iot.codec.session.Session;
-import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.protocol.codec.session.Session;
+import io.github.xiaowuiot.protocol.codec.session.SessionManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

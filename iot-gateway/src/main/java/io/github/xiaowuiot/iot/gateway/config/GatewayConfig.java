@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.gateway.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.protocol.codec.session.SessionManager;
 import io.github.xiaowuiot.iot.gateway.audit.AuditLog;
 import io.github.xiaowuiot.iot.gateway.audit.CommandAuditFilter;
 import io.github.xiaowuiot.iot.gateway.audit.ConnectionAuditListener;

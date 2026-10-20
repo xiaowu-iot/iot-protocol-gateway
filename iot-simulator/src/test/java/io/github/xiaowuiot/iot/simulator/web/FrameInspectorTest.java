@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.simulator.web;
 
-import io.github.xiaowuiot.iot.hj212.Hj212Crypto;
-import io.github.xiaowuiot.iot.hj212.Hj212Format;
+import io.github.xiaowuiot.protocol.hj212.Hj212Crypto;
+import io.github.xiaowuiot.protocol.hj212.Hj212Format;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;

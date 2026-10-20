@@ -16,6 +16,8 @@
         <maven.compiler.release>17</maven.compiler.release>
         <spring-boot.version>3.5.16</spring-boot.version>
         <netty.version>4.1.139.Final</netty.version>
+        <!-- 协议库 https://github.com/xiaowu-iot/iot-protocols -->
+        <iot-protocols.version>0.1.0-SNAPSHOT</iot-protocols.version>
 
     </properties>
 
@@ -42,23 +44,23 @@
     <dependencies>
         <dependency>
             <groupId>io.github.xiaowuiot</groupId>
-            <artifactId>iot-jt808</artifactId>
-            <version>${project.version}</version>
+            <artifactId>protocol-jt808</artifactId>
+            <version>${iot-protocols.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.xiaowuiot</groupId>
-            <artifactId>iot-jt1078</artifactId>
-            <version>${project.version}</version>
+            <artifactId>protocol-jt1078</artifactId>
+            <version>${iot-protocols.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.xiaowuiot</groupId>
-            <artifactId>iot-hj212</artifactId>
-            <version>${project.version}</version>
+            <artifactId>protocol-hj212</artifactId>
+            <version>${iot-protocols.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.xiaowuiot</groupId>
-            <artifactId>iot-slp</artifactId>
-            <version>${project.version}</version>
+            <artifactId>protocol-slp</artifactId>
+            <version>${iot-protocols.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

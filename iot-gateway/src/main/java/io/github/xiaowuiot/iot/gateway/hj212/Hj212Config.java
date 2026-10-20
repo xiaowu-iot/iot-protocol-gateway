@@ -1,11 +1,11 @@
 package io.github.xiaowuiot.iot.gateway.hj212;
 
-import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.protocol.codec.session.SessionManager;
 import io.github.xiaowuiot.iot.gateway.config.IotProperties;
 import io.github.xiaowuiot.iot.gateway.sink.MessageSinks;
-import io.github.xiaowuiot.iot.hj212.Hj212Crypto;
-import io.github.xiaowuiot.iot.hj212.Hj212Factors;
-import io.github.xiaowuiot.iot.hj212.server.Hj212Server;
+import io.github.xiaowuiot.protocol.hj212.Hj212Crypto;
+import io.github.xiaowuiot.protocol.hj212.Hj212Factors;
+import io.github.xiaowuiot.protocol.hj212.server.Hj212Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

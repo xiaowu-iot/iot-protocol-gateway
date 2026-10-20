@@ -31,7 +31,19 @@
 
 ## 快速开始
 
-环境：JDK 17+、Maven 3.6+（只构建协议库的话 JDK 8 也可以）。
+环境：JDK 17+、Maven 3.6+。
+
+协议库还没发布到中央仓库，先把它装到本地：
+
+```bash
+git clone https://github.com/xiaowu-iot/iot-protocols.git
+# 国内访问慢的话用 Gitee 镜像：https://gitee.com/xiaowu-iot/iot-protocols.git
+cd iot-protocols
+mvn clean install -DskipTests
+cd ..
+```
+
+再构建网关和模拟器：
 
 ```bash
 git clone https://github.com/xiaowu-iot/iot-protocol-gateway.git
@@ -125,16 +137,12 @@ java -jar iot-simulator/target/iot-simulator-0.1.0-SNAPSHOT.jar web
 
 ```
 iot-protocol-gateway
-├── iot-protocols          协议库（JDK 8+）
-│   ├── iot-codec-core     编解码基础：帧解码、校验、会话、指令应答匹配
-│   ├── iot-jt808          JT/T 808-2013 / 2019
-│   ├── iot-jt1078         JT/T 1078 音视频（规划中）
-│   ├── iot-hj212          HJ212-2005 / 2017 / 2025
-│   └── iot-slp            SLP 智能储物柜协议（示例私有协议）
 ├── iot-gateway            接入网关应用（Spring Boot 3，JDK 17+）
 ├── iot-simulator          设备模拟器和 HJ212 网页调试工具（JDK 17+）
 └── iot-docs               文档和入门文章
 ```
+
+协议库在独立的仓库 [iot-protocols](https://github.com/xiaowu-iot/iot-protocols)（JDK 8+，不依赖 Spring）：底座、JT/T 808、JT/T 1078、HJ212、SLP，网关和模拟器按版本号依赖它。
 
 ## 默认端口
 

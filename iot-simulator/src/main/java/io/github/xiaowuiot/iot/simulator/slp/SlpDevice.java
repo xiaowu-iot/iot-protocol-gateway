@@ -1,9 +1,9 @@
 package io.github.xiaowuiot.iot.simulator.slp;
 
 import io.github.xiaowuiot.iot.simulator.SimulatorStats;
-import io.github.xiaowuiot.iot.slp.SlpMessage;
-import io.github.xiaowuiot.iot.slp.body.SlpBodies;
-import io.github.xiaowuiot.iot.slp.codec.SlpCodecs;
+import io.github.xiaowuiot.protocol.slp.SlpMessage;
+import io.github.xiaowuiot.protocol.slp.body.SlpBodies;
+import io.github.xiaowuiot.protocol.slp.codec.SlpCodecs;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;

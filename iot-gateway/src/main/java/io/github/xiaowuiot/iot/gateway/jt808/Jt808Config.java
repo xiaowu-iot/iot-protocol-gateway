@@ -1,14 +1,14 @@
 package io.github.xiaowuiot.iot.gateway.jt808;
 
-import io.github.xiaowuiot.iot.codec.session.Session;
-import io.github.xiaowuiot.iot.codec.session.SessionListener;
-import io.github.xiaowuiot.iot.codec.session.SessionManager;
+import io.github.xiaowuiot.protocol.codec.session.Session;
+import io.github.xiaowuiot.protocol.codec.session.SessionListener;
+import io.github.xiaowuiot.protocol.codec.session.SessionManager;
 import io.github.xiaowuiot.iot.gateway.config.IotProperties;
 import io.github.xiaowuiot.iot.gateway.message.DeviceMessage;
 import io.github.xiaowuiot.iot.gateway.sink.MessageSinks;
-import io.github.xiaowuiot.iot.jt808.server.InMemoryAuthService;
-import io.github.xiaowuiot.iot.jt808.server.Jt808AuthService;
-import io.github.xiaowuiot.iot.jt808.server.Jt808Server;
+import io.github.xiaowuiot.protocol.jt808.server.InMemoryAuthService;
+import io.github.xiaowuiot.protocol.jt808.server.Jt808AuthService;
+import io.github.xiaowuiot.protocol.jt808.server.Jt808Server;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;

@@ -1,20 +1,20 @@
 package io.github.xiaowuiot.iot.gateway.jt808;
 
-import io.github.xiaowuiot.iot.codec.util.HexUtils;
+import io.github.xiaowuiot.protocol.codec.util.HexUtils;
 import io.github.xiaowuiot.iot.gateway.message.DeviceMessage;
-import io.github.xiaowuiot.iot.jt808.Jt808Flags;
-import io.github.xiaowuiot.iot.jt808.Jt808Message;
-import io.github.xiaowuiot.iot.jt808.MessageId;
-import io.github.xiaowuiot.iot.jt808.body.AlarmExtras;
-import io.github.xiaowuiot.iot.jt808.body.AreaAlarmInfo;
-import io.github.xiaowuiot.iot.jt808.body.DriverInfo;
-import io.github.xiaowuiot.iot.jt808.body.InfoBodies;
-import io.github.xiaowuiot.iot.jt808.body.Location;
-import io.github.xiaowuiot.iot.jt808.body.LocationBatch;
-import io.github.xiaowuiot.iot.jt808.body.Multimedia;
-import io.github.xiaowuiot.iot.jt808.body.PassThrough;
-import io.github.xiaowuiot.iot.jt808.body.Recorder;
-import io.github.xiaowuiot.iot.jt808.body.UpgradeResult;
+import io.github.xiaowuiot.protocol.jt808.Jt808Flags;
+import io.github.xiaowuiot.protocol.jt808.Jt808Message;
+import io.github.xiaowuiot.protocol.jt808.MessageId;
+import io.github.xiaowuiot.protocol.jt808.body.AlarmExtras;
+import io.github.xiaowuiot.protocol.jt808.body.AreaAlarmInfo;
+import io.github.xiaowuiot.protocol.jt808.body.DriverInfo;
+import io.github.xiaowuiot.protocol.jt808.body.InfoBodies;
+import io.github.xiaowuiot.protocol.jt808.body.Location;
+import io.github.xiaowuiot.protocol.jt808.body.LocationBatch;
+import io.github.xiaowuiot.protocol.jt808.body.Multimedia;
+import io.github.xiaowuiot.protocol.jt808.body.PassThrough;
+import io.github.xiaowuiot.protocol.jt808.body.Recorder;
+import io.github.xiaowuiot.protocol.jt808.body.UpgradeResult;
 
 import java.util.ArrayList;
 import java.util.List;

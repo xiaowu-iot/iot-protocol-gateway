@@ -1,10 +1,10 @@
 package io.github.xiaowuiot.iot.simulator.web;
 
-import io.github.xiaowuiot.iot.codec.util.Checksums;
-import io.github.xiaowuiot.iot.hj212.Hj212Commands;
-import io.github.xiaowuiot.iot.hj212.Hj212Crypto;
-import io.github.xiaowuiot.iot.hj212.Hj212Format;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.codec.util.Checksums;
+import io.github.xiaowuiot.protocol.hj212.Hj212Commands;
+import io.github.xiaowuiot.protocol.hj212.Hj212Crypto;
+import io.github.xiaowuiot.protocol.hj212.Hj212Format;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;

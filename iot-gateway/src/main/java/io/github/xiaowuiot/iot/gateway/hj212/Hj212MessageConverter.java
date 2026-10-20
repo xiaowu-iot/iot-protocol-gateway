@@ -1,10 +1,10 @@
 package io.github.xiaowuiot.iot.gateway.hj212;
 
 import io.github.xiaowuiot.iot.gateway.message.DeviceMessage;
-import io.github.xiaowuiot.iot.hj212.Hj212Commands;
-import io.github.xiaowuiot.iot.hj212.Hj212Factors;
-import io.github.xiaowuiot.iot.hj212.Hj212Packet;
-import io.github.xiaowuiot.iot.hj212.Hj212Versions;
+import io.github.xiaowuiot.protocol.hj212.Hj212Commands;
+import io.github.xiaowuiot.protocol.hj212.Hj212Factors;
+import io.github.xiaowuiot.protocol.hj212.Hj212Packet;
+import io.github.xiaowuiot.protocol.hj212.Hj212Versions;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

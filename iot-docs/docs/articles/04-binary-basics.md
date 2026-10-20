@@ -187,4 +187,4 @@ for (int i = 0; i < 6; i++) {
 
 ---
 
-本文涉及的工具类都在仓库的 `iot-codec-core` 模块里：[iot-protocol-gateway](https://github.com/xiaowu-iot/iot-protocol-gateway)
+本文涉及的工具类都在协议库 [iot-protocols](https://github.com/xiaowu-iot/iot-protocols) 的 `protocol-core` 模块里

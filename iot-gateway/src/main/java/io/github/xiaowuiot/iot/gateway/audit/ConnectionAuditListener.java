@@ -1,7 +1,7 @@
 package io.github.xiaowuiot.iot.gateway.audit;
 
-import io.github.xiaowuiot.iot.codec.session.Session;
-import io.github.xiaowuiot.iot.codec.session.SessionListener;
+import io.github.xiaowuiot.protocol.codec.session.Session;
+import io.github.xiaowuiot.protocol.codec.session.SessionListener;
 import io.netty.channel.Channel;
 
 /**

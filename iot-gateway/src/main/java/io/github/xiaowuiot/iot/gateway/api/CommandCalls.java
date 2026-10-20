@@ -1,9 +1,9 @@
 package io.github.xiaowuiot.iot.gateway.api;
 
-import io.github.xiaowuiot.iot.jt808.Jt808Message;
-import io.github.xiaowuiot.iot.jt808.body.GeneralResponse;
-import io.github.xiaowuiot.iot.jt808.server.Jt808CommandSender;
-import io.github.xiaowuiot.iot.jt808.server.Jt808Server;
+import io.github.xiaowuiot.protocol.jt808.Jt808Message;
+import io.github.xiaowuiot.protocol.jt808.body.GeneralResponse;
+import io.github.xiaowuiot.protocol.jt808.server.Jt808CommandSender;
+import io.github.xiaowuiot.protocol.jt808.server.Jt808Server;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
