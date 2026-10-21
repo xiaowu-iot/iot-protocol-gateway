@@ -144,6 +144,34 @@ iot-protocol-gateway
 
 协议库在独立的仓库 [iot-protocols](https://github.com/xiaowu-iot/iot-protocols)（JDK 8+，不依赖 Spring）：底座、JT/T 808、JT/T 1078、HJ212、SLP，网关和模拟器按版本号依赖它。
 
+## 工作流程
+
+各协议自己的处理流程（808 接入时序、解码流水线、指令应答匹配、HJ212 命令交互、SLP 升级……）画在协议库 [iot-protocols](https://github.com/xiaowu-iot/iot-protocols#工作流程) 的 README 里，这里画网关这一层。
+
+所有协议的数据先转成统一的 `DeviceMessage`（JSON），再交给输出端；**输出成功之后才给设备回应答**，下游（Kafka、Webhook）出故障时设备收不到应答会重发，数据不会在网关里丢。
+
+```mermaid
+flowchart TB
+    subgraph DEV["设备"]
+        direction LR
+        D1["808 终端"] ~~~ D2["HJ212 数采仪"] ~~~ D3["储物柜（SLP）"]
+    end
+    subgraph SERVERS["协议服务（协议库）"]
+        direction LR
+        S1["Jt808Server"] ~~~ S2["Hj212Server"] ~~~ S3["SlpServer"]
+    end
+    DEV --> SERVERS
+    SERVERS --> CV["各协议的 MessageConverter<br/>转成统一的 DeviceMessage：设备号、协议、类型、时间、数据"]
+    CV --> MS["MessageSinks：同时交给所有输出端，全部成功才算成功"]
+    MS --> K["KafkaSink"]
+    MS --> W["WebhookSink"]
+    MS --> L["LogSink（iot.data 日志）"]
+    MS -->|成功| ACK["给设备回应答"]
+    MS -->|失败| NACK["不回应答，设备重发"]
+    API["HTTP 管理接口"] -->|下发指令| CMD["对应协议的 CommandSender<br/>登记流水号 / QN，等应答，超时重发"]
+    CMD --> SERVERS
+```
+
 ## 默认端口
 
 | 服务 | 端口 |
